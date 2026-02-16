@@ -1,4 +1,5 @@
 using Serilog;
+using Serilog.Events;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,11 +14,22 @@ namespace Common.Logging
                 {
                     var section = configuration.GetSection("CustomLogging");
                     var seqUri = section.GetSection("SeqUri").Value;
-                    var application = section.GetSection("Application").Value ?? string.Empty;
-                    var version = section.GetSection("Version").Value ?? string.Empty;
+                    var application =
+                        section.GetSection("Application").Value ??
+                        section.GetSection("Project").Value ??
+                        string.Empty;
+                    var version =
+                        section.GetSection("Version").Value ??
+                        section.GetSection("ServiceVersion").Value ??
+                        string.Empty;
+                    var logEventLevelRaw = section.GetSection("LogEventLevel").Value ?? "Information";
+                    if (!Enum.TryParse<LogEventLevel>(logEventLevelRaw, true, out var minimumLevel))
+                    {
+                        minimumLevel = LogEventLevel.Information;
+                    }
 
                     var loggerConfig = new LoggerConfiguration()
-                        .MinimumLevel.Verbose()
+                        .MinimumLevel.Is(minimumLevel)
                         .Enrich.FromLogContext()
                         .Enrich.WithProperty("Project", section.GetSection("Project").Value)
                         .Enrich.WithProperty("MachineName", Environment.MachineName)
