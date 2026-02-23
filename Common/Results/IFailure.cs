@@ -4,4 +4,13 @@ namespace Common.Results
     {
         string Message { get; }
     }
+
+    public interface IValidationFailure : IFailure
+    { }
+
+    public interface INotFoundFailure : IFailure
+    { }
+
+    public interface IConflictFailure : IFailure
+    { }
 }
