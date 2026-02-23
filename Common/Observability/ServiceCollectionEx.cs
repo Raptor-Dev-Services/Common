@@ -8,6 +8,8 @@ namespace Common.Observability
 {
     public static class ServiceCollectionEx
     {
+        public const string ApiMeterName = "CMSA.Api";
+
         public static IServiceCollection AddObservability(this IServiceCollection services, IConfiguration configuration)
         {
             var section = configuration.GetSection("Observability");
@@ -39,9 +41,11 @@ namespace Common.Observability
                 .WithMetrics(metrics =>
                 {
                     metrics
+                        .AddMeter(ApiMeterName)
                         .AddAspNetCoreInstrumentation()
                         .AddHttpClientInstrumentation()
-                        .AddRuntimeInstrumentation();
+                        .AddRuntimeInstrumentation()
+                        .AddPrometheusExporter();
 
                     if (!string.IsNullOrWhiteSpace(otlpEndpoint))
                     {
