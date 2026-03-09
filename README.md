@@ -123,6 +123,7 @@ app.UseCoreProblemDetails();
 - `TenantDbConnectionFactory` para resolver conexión por tenant.
 - `CurrentTenantDbConnectionFactory` para usar el tenant actual del request.
 - `ITenantConnectionStringResolver` para obtener cadenas por tenant.
+- `IDapperSqlDbConnection` + `DapperSqlDbConnectionBase` para operaciones Dapper con logging y medición de tiempo.
 
 Ejemplo con el mismo estilo de `Persistence/Connections`:
 
