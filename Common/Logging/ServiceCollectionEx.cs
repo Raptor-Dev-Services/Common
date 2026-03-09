@@ -35,6 +35,7 @@ namespace Common.Logging
                     var loggerConfig = new LoggerConfiguration()
                         .MinimumLevel.Is(minimumLevel)
                         .Enrich.FromLogContext()
+                        .Enrich.With<TenantLogEventEnricher>()
                         .Enrich.WithProperty("Project", section.GetSection("Project").Value)
                         .Enrich.WithProperty("MachineName", Environment.MachineName)
                         .Enrich.WithProperty("Environment", environment ?? string.Empty)

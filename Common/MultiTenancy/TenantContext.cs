@@ -21,6 +21,8 @@ namespace Common.MultiTenancy
     {
         private static readonly AsyncLocal<TenantContextHolder> Holder = new();
 
+        public static string? CurrentTenantId => Holder.Value?.Context?.TenantId;
+
         public TenantContext? Current
         {
             get => Holder.Value?.Context;

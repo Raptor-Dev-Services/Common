@@ -32,6 +32,7 @@ namespace Common.Web
         private readonly RequestDelegate _next;
         private readonly ITenantResolver _tenantResolver;
         private readonly ITenantContextAccessor _tenantContextAccessor;
+        private readonly ITenantConfigurationStore _tenantConfigurationStore;
         private readonly IOptions<MultiTenantOptions> _options;
         private readonly ILogger<TenantResolutionMiddleware> _logger;
 
@@ -39,12 +40,14 @@ namespace Common.Web
             RequestDelegate next,
             ITenantResolver tenantResolver,
             ITenantContextAccessor tenantContextAccessor,
+            ITenantConfigurationStore tenantConfigurationStore,
             IOptions<MultiTenantOptions> options,
             ILogger<TenantResolutionMiddleware> logger)
         {
             _next = next;
             _tenantResolver = tenantResolver;
             _tenantContextAccessor = tenantContextAccessor;
+            _tenantConfigurationStore = tenantConfigurationStore;
             _options = options;
             _logger = logger;
         }
@@ -70,6 +73,34 @@ namespace Common.Web
             if (string.IsNullOrWhiteSpace(tenantId))
             {
                 await _next(context).ConfigureAwait(false);
+                return;
+            }
+
+            if (_tenantConfigurationStore.TryGetTenant(tenantId, out var tenantOptions))
+            {
+                if (!tenantOptions.IsEnabled)
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    await context.Response.WriteAsJsonAsync(new ProblemDetails
+                    {
+                        Status = StatusCodes.Status403Forbidden,
+                        Title = "Tenant disabled",
+                        Detail = $"Tenant '{tenantId}' is disabled.",
+                        Instance = context.Request.Path
+                    }).ConfigureAwait(false);
+                    return;
+                }
+            }
+            else if (options.RejectUnknownTenants && options.Tenants.Count > 0)
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsJsonAsync(new ProblemDetails
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Title = "Unknown tenant",
+                    Detail = $"Tenant '{tenantId}' is not registered.",
+                    Instance = context.Request.Path
+                }).ConfigureAwait(false);
                 return;
             }
 

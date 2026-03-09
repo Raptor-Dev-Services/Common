@@ -23,6 +23,7 @@ namespace Common.MultiTenancy
             services.AddSingleton<ITenantResolver, DefaultTenantResolver>();
             services.AddSingleton<ITenantConfigurationStore, TenantConfigurationStore>();
             services.AddSingleton<ITenantConnectionStringResolver, TenantConnectionStringResolver>();
+            services.AddSingleton<ITenantExecutionContextRunner, TenantExecutionContextRunner>();
 
             return services;
         }

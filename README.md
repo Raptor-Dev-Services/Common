@@ -60,6 +60,7 @@ En el proyecto WebApi:
 builder.Services.AddLoggingServices(builder.Configuration);
 builder.Services.AddObservability(builder.Configuration);
 builder.Services.AddMultiTenancy(builder.Configuration);
+builder.Services.AddHttpClient("core").AddCoreResilience().AddTenantPropagation();
 ```
 
 ### 3) Registrar middlewares base
@@ -88,12 +89,14 @@ app.UseCoreProblemDetails();
   },
   "MultiTenancy": {
     "RequireTenant": true,
+    "RejectUnknownTenants": true,
     "TenantHeaderName": "X-Tenant-Id",
     "ResolveFromHeader": true,
     "ResolveFromSubdomain": true,
     "DefaultTenantId": "default",
     "Tenants": {
       "tenant-a": {
+        "IsEnabled": true,
         "ConnectionStrings": {
           "Default": "Server=...;Database=TenantA;..."
         },
@@ -102,6 +105,7 @@ app.UseCoreProblemDetails();
         }
       },
       "tenant-b": {
+        "IsEnabled": true,
         "ConnectionStrings": {
           "Default": "Server=...;Database=TenantB;..."
         },
@@ -147,6 +151,16 @@ public sealed class ConfigurationSqlDbConnectionFactory<TConnectionName>
 }
 ```
 
+Ejemplo para jobs/background:
+
+```csharp
+await tenantExecutionContextRunner.RunAsync("tenant-a", async ct =>
+{
+    // Todo lo que se ejecute aqui conserva TenantId en contexto/logs/traces.
+    await service.RunAsync(ct);
+}, cancellationToken);
+```
+
 ## Troubleshooting
 
 | Sintoma | Causa probable | Solucion |
@@ -156,6 +170,8 @@ public sealed class ConfigurationSqlDbConnectionFactory<TConnectionName>
 | No llegan traces a Grafana | Endpoint OTLP incorrecto | Verifica `Observability:OtlpEndpoint` y conectividad. |
 | No aparecen metricas en Prometheus | Falta endpoint/scrape de metricas | Habilita endpoint Prometheus en la API y configuralo en Prometheus. |
 | Logs sin tenant | Middleware multi-tenant no registrado | Asegura `app.UseTenantResolution()` antes de procesar endpoints. |
+| Llamadas HTTP salientes sin tenant | Falta propagacion en `HttpClient` | Usa `.AddTenantPropagation()` al registrar clientes HTTP. |
+| Jobs/consumers sin tenant en logs | No se setea contexto fuera de HTTP | Ejecuta procesos con `ITenantExecutionContextRunner`. |
 
 ## Notas tecnicas
 
@@ -163,3 +179,4 @@ public sealed class ConfigurationSqlDbConnectionFactory<TConnectionName>
 - OpenTelemetry tambien expone metricas para Prometheus (`AddPrometheusExporter`).
 - Serilog usa `CustomLogging:LogEventLevel` (por defecto Verbose); en `Development` fuerza al menos `Debug`.
 - El middleware de tenant agrega `tenant.id` al `Activity` actual y `TenantId` al scope de logs por request.
+- `RejectUnknownTenants=true` rechaza tenants no registrados cuando existe catalogo de tenants en configuracion.
