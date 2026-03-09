@@ -118,26 +118,30 @@ app.UseCoreProblemDetails();
 
 `Common` define contratos para que cada proyecto implemente su proveedor:
 
-- `ITenantConnectionStringResolver` para resolver la cadena por tenant.
-- `ITenantDbConnectionFactory<TConnection>` para abrir conexiones tipadas.
-- `TenantDbConnectionFactoryBase<TConnection>` como base reutilizable.
+- `DbConnectionFactory` como base simple para conexiones por cadena fija.
+- `ConfigurationDbConnectionFactory<TConnectionName>` para resolver `ConnectionStrings:{typeof(TConnectionName).Name}`.
+- `TenantDbConnectionFactory` para resolver conexión por tenant.
+- `CurrentTenantDbConnectionFactory` para usar el tenant actual del request.
+- `ITenantConnectionStringResolver` para obtener cadenas por tenant.
 
-Ejemplo para SQL Server en tu proyecto API:
+Ejemplo con el mismo estilo de `Persistence/Connections`:
 
 ```csharp
 using Common.Data;
 using Common.MultiTenancy;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
+using System.Data;
 
-public sealed class SqlTenantConnectionFactory
-    : TenantDbConnectionFactoryBase<SqlConnection>
+public sealed class ConfigurationSqlDbConnectionFactory<TConnectionName>
+    : ConfigurationDbConnectionFactory<TConnectionName>
 {
-    public SqlTenantConnectionFactory(ITenantConnectionStringResolver resolver)
-        : base(resolver, "Default")
+    public ConfigurationSqlDbConnectionFactory(IConfiguration configuration)
+        : base(configuration)
     {
     }
 
-    protected override SqlConnection CreateConnection(string connectionString)
+    protected override IDbConnection CreateConnection(string connectionString)
         => new(connectionString);
 }
 ```
