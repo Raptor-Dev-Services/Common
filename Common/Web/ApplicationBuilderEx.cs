@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Common.Exceptions;
+using Common.MultiTenancy;
 
 namespace Common.Web
 {
@@ -14,9 +16,80 @@ namespace Common.Web
             return app.UseMiddleware<CorrelationIdMiddleware>();
         }
 
+        public static IApplicationBuilder UseTenantResolution(this IApplicationBuilder app)
+        {
+            return app.UseMiddleware<TenantResolutionMiddleware>();
+        }
+
         public static IApplicationBuilder UseCoreProblemDetails(this IApplicationBuilder app)
         {
             return app.UseMiddleware<ProblemDetailsMiddleware>();
+        }
+    }
+
+    public sealed class TenantResolutionMiddleware
+    {
+        private readonly RequestDelegate _next;
+        private readonly ITenantResolver _tenantResolver;
+        private readonly ITenantContextAccessor _tenantContextAccessor;
+        private readonly IOptions<MultiTenantOptions> _options;
+        private readonly ILogger<TenantResolutionMiddleware> _logger;
+
+        public TenantResolutionMiddleware(
+            RequestDelegate next,
+            ITenantResolver tenantResolver,
+            ITenantContextAccessor tenantContextAccessor,
+            IOptions<MultiTenantOptions> options,
+            ILogger<TenantResolutionMiddleware> logger)
+        {
+            _next = next;
+            _tenantResolver = tenantResolver;
+            _tenantContextAccessor = tenantContextAccessor;
+            _options = options;
+            _logger = logger;
+        }
+
+        public async Task Invoke(HttpContext context)
+        {
+            var tenantId = await _tenantResolver.ResolveTenantIdAsync(context, context.RequestAborted).ConfigureAwait(false);
+            var options = _options.Value;
+
+            if (string.IsNullOrWhiteSpace(tenantId) && options.RequireTenant)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsJsonAsync(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Tenant not resolved",
+                    Detail = "Could not resolve tenant identifier for this request.",
+                    Instance = context.Request.Path
+                }).ConfigureAwait(false);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(tenantId))
+            {
+                await _next(context).ConfigureAwait(false);
+                return;
+            }
+
+            var tenantContext = new TenantContext(tenantId);
+            _tenantContextAccessor.Current = tenantContext;
+            context.Items[nameof(TenantContext)] = tenantContext;
+            context.Response.Headers[options.TenantResponseHeaderName] = tenantId;
+            Activity.Current?.SetTag("tenant.id", tenantId);
+
+            try
+            {
+                using (_logger.BeginScope(new Dictionary<string, object?> { ["TenantId"] = tenantId }))
+                {
+                    await _next(context).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                _tenantContextAccessor.Current = null;
+            }
         }
     }
 
@@ -93,6 +166,11 @@ namespace Common.Web
             };
 
             problem.Extensions["traceId"] = Activity.Current?.TraceId.ToString() ?? context.TraceIdentifier;
+            if (context.Items.TryGetValue(nameof(TenantContext), out var tenantContext) &&
+                tenantContext is TenantContext value)
+            {
+                problem.Extensions["tenantId"] = value.TenantId;
+            }
 
             context.Response.StatusCode = statusCode;
             context.Response.ContentType = "application/problem+json";
