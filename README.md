@@ -11,7 +11,7 @@ Libreria base reutilizable para WebApi (.NET 10) con logging (Serilog + Seq) y o
 | Microsoft.Extensions.Logging | 10.0.2 | Abstracciones de logging. |
 | Microsoft.Extensions.Http.Resilience | 10.2.0 | Resiliencia para llamadas HTTP salientes. |
 | Serilog | 4.3.0 | Logger estructurado. |
-| AspNetCore.HealthChecks.SqlServer | 9.0.0 | Health checks para SQL Server. |
+| AspNetCore.HealthChecks.NpgSql | 9.0.0 | Health checks para PostgreSQL. |
 | AspNetCore.HealthChecks.Redis | 9.0.0 | Health checks para Redis. |
 | OpenTelemetry.Extensions.Hosting | ver Common.csproj | Bootstrap OTel en host .NET. |
 | OpenTelemetry.Exporter.OpenTelemetryProtocol | ver Common.csproj | Exportacion OTLP (Grafana Tempo / OTEL collector). |
@@ -34,6 +34,7 @@ Libreria base reutilizable para WebApi (.NET 10) con logging (Serilog + Seq) y o
 | ViewModels | Common.ViewModels | ViewModels genericos. |
 | MultiTenancy | Common.MultiTenancy | Resolucion de tenant, contexto actual y configuracion por tenant. |
 | Data | Common.Data | Abstracciones de conexiones DB para implementaciones por proyecto. |
+| PostgreSql | Common.PostgreSql | Factorias Npgsql, health checks y migraciones por scripts al arranque. |
 
 ## Compatibilidad
 
@@ -132,22 +133,20 @@ app.UseCoreProblemDetails();
 Ejemplo con el mismo estilo de `Persistence/Connections`:
 
 ```csharp
-using Common.Data;
-using Common.MultiTenancy;
-using Microsoft.Data.SqlClient;
+using Common.PostgreSql;
 using Microsoft.Extensions.Configuration;
-using System.Data;
 
-public sealed class ConfigurationSqlDbConnectionFactory<TConnectionName>
-    : ConfigurationDbConnectionFactory<TConnectionName>
+public sealed class MainDbConnection
 {
-    public ConfigurationSqlDbConnectionFactory(IConfiguration configuration)
+}
+
+public sealed class ConfigurationMainDbConnectionFactory
+    : ConfigurationNpgsqlConnectionFactory<MainDbConnection>
+{
+    public ConfigurationMainDbConnectionFactory(IConfiguration configuration)
         : base(configuration)
     {
     }
-
-    protected override IDbConnection CreateConnection(string connectionString)
-        => new(connectionString);
 }
 ```
 

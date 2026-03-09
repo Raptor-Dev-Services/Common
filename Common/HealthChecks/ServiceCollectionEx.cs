@@ -18,7 +18,23 @@ namespace Common.HealthChecks
             IEnumerable<string>? tags = null,
             TimeSpan? timeout = null)
         {
-            return builder.AddSqlServer(
+            return builder.AddNpgSql(
+                connectionString: connectionString,
+                name: name,
+                failureStatus: failureStatus,
+                tags: tags,
+                timeout: timeout);
+        }
+
+        public static IHealthChecksBuilder AddPostgreSqlHealthCheck(
+            this IHealthChecksBuilder builder,
+            string connectionString,
+            string name = "postgres",
+            HealthStatus? failureStatus = null,
+            IEnumerable<string>? tags = null,
+            TimeSpan? timeout = null)
+        {
+            return builder.AddNpgSql(
                 connectionString: connectionString,
                 name: name,
                 failureStatus: failureStatus,
