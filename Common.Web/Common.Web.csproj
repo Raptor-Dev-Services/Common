@@ -6,14 +6,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <!-- Facade transitoria: re-exporta las 5 sub-librerías para que los consumidores
-       que hoy referencian Common.csproj sigan compilando sin cambios. -->
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../Common.Contracts/Common.Contracts.csproj" />
-    <ProjectReference Include="../Common.Messaging/Common.Messaging.csproj" />
     <ProjectReference Include="../Common.MultiTenancy/Common.MultiTenancy.csproj" />
-    <ProjectReference Include="../Common.Infra/Common.Infra.csproj" />
-    <ProjectReference Include="../Common.Web/Common.Web.csproj" />
   </ItemGroup>
 
 </Project>

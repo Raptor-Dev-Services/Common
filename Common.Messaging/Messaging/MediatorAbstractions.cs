@@ -1,11 +1,5 @@
 namespace Common.Messaging
 {
-    public interface INotification
-    { }
-
-    public interface IResponse : INotification
-    { }
-
     public interface IRequest<out TResponse>
     { }
 

@@ -1,3 +1,8 @@
 <Solution>
   <Project Path="Common/Common.csproj" />
+  <Project Path="Common.Contracts/Common.Contracts.csproj" />
+  <Project Path="Common.Messaging/Common.Messaging.csproj" />
+  <Project Path="Common.MultiTenancy/Common.MultiTenancy.csproj" />
+  <Project Path="Common.Infra/Common.Infra.csproj" />
+  <Project Path="Common.Web/Common.Web.csproj" />
 </Solution>

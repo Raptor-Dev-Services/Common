@@ -20,7 +20,33 @@ Libreria base reutilizable para WebApi (.NET 10) con logging (Serilog + Seq) y o
 | OpenTelemetry.Instrumentation.Http | ver Common.csproj | Instrumentacion de HttpClient. |
 | OpenTelemetry.Instrumentation.Runtime | ver Common.csproj | Metricas runtime (.NET GC, CPU, etc.). |
 
-## Modulos
+## Arquitectura modular (v2.0.0)
+
+Desde **v2.0.0**, `Common` se reparte en **5 sub-librerias + una facade**. Los **namespaces NO cambian**
+(`Common.Results`, `Common.Messaging`, ...): solo cambia el ensamblado que los contiene, para que cada
+capa de un monolito modular referencie unicamente lo que necesita. Quien hoy referencia `Common.csproj`
+(la facade) sigue compilando sin tocar un solo `using`.
+
+| Proyecto (assembly) | Namespaces que contiene | Depende de |
+|---|---|---|
+| `Common.Contracts` | `Common.Results`, `Common.Errors`, `Common.Exceptions`, `Common.Messaging` (solo `INotification`/`IResponse`) | — |
+| `Common.Messaging` | `Common.Messaging` (contratos mediator), `Common.Abstractions` | Contracts |
+| `Common.MultiTenancy` | `Common.MultiTenancy` | ASP.NET + Serilog |
+| `Common.Infra` | `Common.Logging`, `Common.Observability`, `Common.HealthChecks`, `Common.Http`, `Common.Options`, `Common.Messaging` (impl `Mediator`/pipeline/`AddMediator`), `Common.Data`, `Common.PostgreSql` | Contracts + Messaging + MultiTenancy + NuGets |
+| `Common.Web` | `Common.ViewModels`, `Common.Web` | Contracts + MultiTenancy + ASP.NET |
+| `Common` (facade) | re-exporta los 5 anteriores | los 5 |
+
+### Referencias por capa
+
+| Capa | Referencia |
+|---|---|
+| Domain | `Common.Contracts` |
+| Application | `Common.Contracts` + `Common.Messaging` (+ `Common.MultiTenancy` si lee tenant) |
+| Infrastructure | `Common.Contracts` + `Common.Messaging` + `Common.MultiTenancy` + `Common.Infra` |
+| Presentation | `Common.Contracts` + `Common.Messaging` + `Common.Web` |
+| Host | `Common.Infra` + `Common.Web` |
+
+### Modulos (responsabilidad)
 
 | Modulo | Namespace | Responsabilidad |
 |---|---|---|
@@ -29,7 +55,7 @@ Libreria base reutilizable para WebApi (.NET 10) con logging (Serilog + Seq) y o
 | Results | Common.Results | Resultado estandar (Result/Success/Failure). |
 | Errors | Common.Errors | ErrorList utilitaria. |
 | Exceptions | Common.Exceptions | Excepciones de dominio. |
-| Messaging | Common.Messaging | Contratos IRequest/IResponse/IMediator/pipe. |
+| Messaging | Common.Messaging | Contratos IRequest/IResponse/IMediator/pipe + impl Mediator. |
 | Abstractions | Common.Abstractions | Interfaces base de interactores/presenters. |
 | ViewModels | Common.ViewModels | ViewModels genericos. |
 | MultiTenancy | Common.MultiTenancy | Resolucion de tenant, contexto actual y configuracion por tenant. |
@@ -47,11 +73,20 @@ Libreria base reutilizable para WebApi (.NET 10) con logging (Serilog + Seq) y o
 
 ### 1) Referenciar el proyecto
 
-En el proyecto WebApi:
+Opcion simple (facade, trae todo) — tipica para un Host/WebApi:
 
 ```xml
 <ItemGroup>
   <ProjectReference Include="..\\Common\\Common.csproj" />
+</ItemGroup>
+```
+
+Opcion monolito modular (referencia por capa) — ver "Referencias por capa" arriba. Ej. capa Host:
+
+```xml
+<ItemGroup>
+  <ProjectReference Include="..\\Common.Infra\\Common.Infra.csproj" />
+  <ProjectReference Include="..\\Common.Web\\Common.Web.csproj" />
 </ItemGroup>
 ```
 
