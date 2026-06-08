@@ -8,9 +8,10 @@ namespace Common.Observability
 {
     public static class ServiceCollectionEx
     {
-        public const string ApiMeterName = "CMSA.Api";
-
-        public static IServiceCollection AddObservability(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddObservability(
+            this IServiceCollection services,
+            IConfiguration configuration,
+            string meterName)
         {
             var section = configuration.GetSection("Observability");
             var serviceName = section.GetSection("ServiceName").Value ?? "UnknownService";
@@ -41,7 +42,7 @@ namespace Common.Observability
                 .WithMetrics(metrics =>
                 {
                     metrics
-                        .AddMeter(ApiMeterName)
+                        .AddMeter(meterName)
                         .AddAspNetCoreInstrumentation()
                         .AddHttpClientInstrumentation()
                         .AddRuntimeInstrumentation()
