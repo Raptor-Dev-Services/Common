@@ -1,0 +1,25 @@
+# Excepciones a la regla `stable-dependencies` (ver .claude/rules/stable-dependencies.md).
+#
+# Un paquete solo entra aqui si NO TIENE NINGUNA VERSION ESTABLE PUBLICADA, nunca. No basta con
+# que la estable este vieja o le falte una funcion: tiene que no existir. Se comprueba contra el
+# registro antes de anadir la linea:
+#
+#   curl -s "https://api.nuget.org/v3-flatcontainer/<paquete-en-minusculas>/index.json" \
+#     | tr ',' '\n' | tr -d '"[]{} ' | grep -E '^[0-9]' | grep -v -- -
+#
+#   npm view <paquete> versions --json
+#
+# Si esa salida trae alguna version, NO hay excepcion: se sube el paquete y se acabo.
+#
+# Formato, cinco campos obligatorios separados por '|':
+#
+#   ecosistema | paquete | version | motivo | revisar-en (YYYY-MM-DD)
+#
+# LA FECHA TIENE DIENTES: el dia que vence, la puerta se pone roja en todos los pipelines de este
+# repo. Es a proposito, y es lo unico que evita que una excepcion "temporal" se vuelva permanente.
+# Al vencer se comprueba otra vez: si ya hay estable, se sube el paquete y se borra esta linea;
+# si sigue sin haberla, se mueve la fecha y se dice por que.
+#
+# Lo comprueba: scripts/check-prerelease-deps.py
+
+nuget | OpenTelemetry.Exporter.Prometheus.AspNetCore | 1.15.0-beta.1 | 34 versiones publicadas en NuGet y CERO estables (verificado 2026-09-17); el exportador Prometheus de OpenTelemetry .NET nunca ha salido de beta. Sin alternativa estable para exponer /metrics por scrape. La salida definitiva es exportar por OTLP al Collector y que el Collector sirva el scrape, lo que quita esta dependencia del codigo. | 2027-03-31
