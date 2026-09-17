@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -17,6 +18,7 @@ namespace Common.Observability
             var serviceName = section.GetSection("ServiceName").Value ?? "UnknownService";
             var serviceVersion = section.GetSection("ServiceVersion").Value ?? string.Empty;
             var otlpEndpoint = section.GetSection("OtlpEndpoint").Value ?? string.Empty;
+            var metricsOtlpEndpoint = section.GetSection("MetricsOtlpEndpoint").Value ?? string.Empty;
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? string.Empty;
 
             services.AddOpenTelemetry()
@@ -45,12 +47,26 @@ namespace Common.Observability
                         .AddMeter(meterName)
                         .AddAspNetCoreInstrumentation()
                         .AddHttpClientInstrumentation()
-                        .AddRuntimeInstrumentation()
-                        .AddPrometheusExporter();
+                        .AddRuntimeInstrumentation();
 
-                    if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+                    // Las metricas pueden salir a un destino distinto del de las trazas: el
+                    // receptor OTLP de Prometheus habla HTTP, no gRPC. Si hay endpoint propio
+                    // de metricas manda ese; si no, se usa el general.
+                    var metricsEndpoint = !string.IsNullOrWhiteSpace(metricsOtlpEndpoint)
+                        ? metricsOtlpEndpoint
+                        : otlpEndpoint;
+
+                    if (!string.IsNullOrWhiteSpace(metricsEndpoint))
                     {
-                        metrics.AddOtlpExporter(opt => opt.Endpoint = new Uri(otlpEndpoint));
+                        metrics.AddOtlpExporter(opt =>
+                        {
+                            opt.Endpoint = new Uri(metricsEndpoint);
+
+                            if (!string.IsNullOrWhiteSpace(metricsOtlpEndpoint))
+                            {
+                                opt.Protocol = OtlpExportProtocol.HttpProtobuf;
+                            }
+                        });
                     }
                 });
 
