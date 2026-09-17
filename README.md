@@ -202,7 +202,7 @@ await tenantExecutionContextRunner.RunAsync("tenant-a", async ct =>
 | `AddSerilog` no existe | Falta `Serilog.Extensions.Logging` | Verifica el PackageReference en `Common.csproj`. |
 | `WriteTo.Seq` no existe | Falta `Serilog.Sinks.Seq` | Instala el paquete correspondiente. |
 | No llegan traces a Grafana | Endpoint OTLP incorrecto | Verifica `Observability:OtlpEndpoint` y conectividad. |
-| No aparecen metricas en Prometheus | Falta endpoint/scrape de metricas | Habilita endpoint Prometheus en la API y configuralo en Prometheus. |
+| No aparecen metricas en Prometheus | La API ya no publica `/metrics`: empuja por OTLP | Configura `Observability:MetricsOtlpEndpoint` al receptor OTLP de Prometheus y arrancalo con `--web.enable-otlp-receiver`. |
 | Logs sin tenant | Middleware multi-tenant no registrado | Asegura `app.UseTenantResolution()` antes de procesar endpoints. |
 | Llamadas HTTP salientes sin tenant | Falta propagacion en `HttpClient` | Usa `.AddTenantPropagation()` al registrar clientes HTTP. |
 | Jobs/consumers sin tenant en logs | No se setea contexto fuera de HTTP | Ejecuta procesos con `ITenantExecutionContextRunner`. |
@@ -210,7 +210,9 @@ await tenantExecutionContextRunner.RunAsync("tenant-a", async ct =>
 ## Notas tecnicas
 
 - OpenTelemetry exporta traces y metrics por OTLP al endpoint configurado.
-- OpenTelemetry tambien expone metricas para Prometheus (`AddPrometheusExporter`).
+- Las metricas pueden salir a un destino distinto del de las trazas con
+  `Observability:MetricsOtlpEndpoint` (HTTP, para el receptor OTLP de Prometheus). Ya no se usa
+  `AddPrometheusExporter`: ese paquete nunca publico una version estable.
 - Serilog usa `CustomLogging:LogEventLevel` (por defecto Verbose); en `Development` fuerza al menos `Debug`.
 - El middleware de tenant agrega `tenant.id` al `Activity` actual y `TenantId` al scope de logs por request.
 - `RejectUnknownTenants=true` rechaza tenants no registrados cuando existe catalogo de tenants en configuracion.
