@@ -5,4 +5,5 @@
   <Project Path="Common.MultiTenancy/Common.MultiTenancy.csproj" />
   <Project Path="Common.Infra/Common.Infra.csproj" />
   <Project Path="Common.Web/Common.Web.csproj" />
+  <Project Path="Common.Tests/Common.Tests.csproj" />
 </Solution>
