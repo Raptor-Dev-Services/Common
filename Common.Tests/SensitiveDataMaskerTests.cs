@@ -164,4 +164,51 @@ public sealed class SensitiveDataMaskerTests
         Assert.Equal("hola", SensitiveDataMasker.Enmascarar("hola"));
         Assert.Equal(42, SensitiveDataMasker.Enmascarar(42));
     }
+
+    private sealed record ConCaducidad(
+        string AccessToken, DateTime AccessTokenExpiresAt,
+        string RefreshToken, DateTime RefreshTokenExpiresAt);
+
+    [Fact]
+    public void La_caducidad_de_un_token_NO_se_tapa_porque_no_es_secreta()
+    {
+        // Se vio en el log real tras aplicar el enmascarado: `AccessTokenExpiresAt` caia
+        // por contener "token" y se tapaba una fecha. No es un secreto, y es justo el dato
+        // con el que se depura un token vencido -- taparlo cuesta y no protege nada.
+        var vence = new DateTime(2026, 9, 23, 2, 0, 0, DateTimeKind.Utc);
+        var d = Assert.IsType<Dictionary<string, object?>>(
+            SensitiveDataMasker.Enmascarar(new ConCaducidad("eyJ...", vence, "qFbd...", vence)));
+
+        Assert.Equal(SensitiveDataMasker.Tapado, d["AccessToken"]);
+        Assert.Equal(SensitiveDataMasker.Tapado, d["RefreshToken"]);
+        // Las dos fechas se conservan.
+        Assert.Equal(vence, d["AccessTokenExpiresAt"]);
+        Assert.Equal(vence, d["RefreshTokenExpiresAt"]);
+    }
+
+    [Fact]
+    public void El_sufijo_exento_no_abre_un_hueco_en_el_nombre_a_secas()
+    {
+        // La exencion es por SUFIJO. Un campo que simplemente se llame "Token" sigue
+        // tapado: lo contrario convertiria la exencion en un agujero.
+        Assert.True(SensitiveDataMasker.EsSensible("Token"));
+        Assert.True(SensitiveDataMasker.EsSensible("AccessToken"));
+        Assert.False(SensitiveDataMasker.EsSensible("AccessTokenExpiresAt"));
+        Assert.False(SensitiveDataMasker.EsSensible("TokenType"));
+    }
+
+    [Fact]
+    public void La_exencion_es_por_SUFIJO_y_no_por_contener_el_termino()
+    {
+        // La diferencia no es teorica: si la exencion se comprobara con Contains en vez de
+        // EndsWith, un campo con un termino descriptivo EN MEDIO quedaria exento y se
+        // registraria en claro. `TypeOfPassword` lleva "type" dentro y es una contrasena.
+        //
+        // Se comprobo mutando EndsWith -> Contains: las pruebas seguian verdes sin esta.
+        Assert.True(SensitiveDataMasker.EsSensible("TypeOfPassword"));
+        Assert.True(SensitiveDataMasker.EsSensible("ExpiresAtSecret"));
+        Assert.True(SensitiveDataMasker.EsSensible("CountOfApiKey"));
+        // Y las exenciones legitimas siguen funcionando.
+        Assert.False(SensitiveDataMasker.EsSensible("AccessTokenExpiresAt"));
+    }
 }

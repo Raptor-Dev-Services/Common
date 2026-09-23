@@ -53,8 +53,28 @@ namespace Common.Messaging
         // dentro del propio logger -- el peor sitio posible para reventar.
         private const int ProfundidadMaxima = 4;
 
-        public static bool EsSensible(string nombre) =>
-            Terminos.Any(t => nombre.Contains(t, StringComparison.OrdinalIgnoreCase));
+        /// <summary>
+        /// Sufijos que DESARMAN la coincidencia: describen el token, no lo contienen.
+        ///
+        /// Sin esto, `AccessTokenExpiresAt` caia por contener "token" y se tapaba una fecha
+        /// de caducidad -- que no es secreta y es justo el dato con el que se depura un
+        /// token vencido. Se vio en el log real tras aplicar el enmascarado.
+        ///
+        /// La lista es de SUFIJOS y no de nombres completos para que cubra la familia:
+        /// AccessTokenExpiresAt, RefreshTokenExpiresAt, TokenExpiresOn.
+        /// </summary>
+        private static readonly string[] SufijosDescriptivos =
+        {
+            "expiresat", "expireson", "expiry", "expiresin",
+            "type", "length", "count", "issuedat",
+        };
+
+        public static bool EsSensible(string nombre)
+        {
+            if (SufijosDescriptivos.Any(s => nombre.EndsWith(s, StringComparison.OrdinalIgnoreCase)))
+                return false;
+            return Terminos.Any(t => nombre.Contains(t, StringComparison.OrdinalIgnoreCase));
+        }
 
         /// <summary>
         /// Devuelve una vista del objeto apta para el log: los campos sensibles con
