@@ -12,7 +12,11 @@ namespace Common.Messaging
         public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
         {
             TResponse response;
-            Logger.LogInformation("{@Request}", request);
+            // Enmascarado ANTES de destructurar. Sin esto, `{@Request}` escribia el objeto
+            // entero en claro: una peticion de login dejaba la contrasena en el log, y su
+            // respuesta los dos tokens. El nivel configurado en produccion es Information,
+            // asi que llegaba a consola --capturada por el runtime del contenedor-- y a Seq.
+            Logger.LogInformation("{@Request}", SensitiveDataMasker.Enmascarar(request));
             try
             {
                 response = await next().ConfigureAwait(false);
@@ -26,7 +30,9 @@ namespace Common.Messaging
                 else
                 {
                     //object? data = ((dynamic)response).Data;
-                    Logger.LogInformation("{@Response}", response);
+                    // La respuesta importa tanto o mas que la peticion: es la que lleva los
+                    // tokens recien emitidos.
+                    Logger.LogInformation("{@Response}", SensitiveDataMasker.Enmascarar(response));
                 }
                 await Mediator.Publish(response).ConfigureAwait(false);
             }
@@ -39,7 +45,7 @@ namespace Common.Messaging
             {
                 var innerEx = ex;
                 while (innerEx.InnerException != null) innerEx = innerEx.InnerException!;
-                Logger.LogCritical(ex, "Error crítico: {ErrorMessage}", innerEx.Message);
+                Logger.LogCritical(ex, "Error crï¿½tico: {ErrorMessage}", innerEx.Message);
                 throw;
             }
             return response;
