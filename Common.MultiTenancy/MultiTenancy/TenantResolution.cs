@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
@@ -27,8 +28,8 @@ namespace Common.MultiTenancy
     /// <see cref="MultiTenantOptions.ResolveFromHeader"/>; (2) query string
     /// <see cref="MultiTenantOptions.TenantQueryStringKey"/> si
     /// <see cref="MultiTenantOptions.ResolveFromQueryString"/>; (3) primer segmento del host si
-    /// <see cref="MultiTenantOptions.ResolveFromSubdomain"/>, el host tiene 3 o mas segmentos y ese
-    /// segmento no esta en <see cref="MultiTenantOptions.IgnoredSubdomains"/>; (4)
+    /// <see cref="MultiTenantOptions.ResolveFromSubdomain"/>, el host es un nombre (no una direccion IP),
+    /// tiene 3 o mas segmentos y ese segmento no esta en <see cref="MultiTenantOptions.IgnoredSubdomains"/>; (4)
     /// <see cref="MultiTenantOptions.DefaultTenantId"/>. Gana el primero con valor no vacio; header
     /// y query se recortan de espacios. No comprueba que el tenant exista.
     /// </para>
@@ -85,7 +86,10 @@ namespace Common.MultiTenancy
             if (options.ResolveFromSubdomain)
             {
                 var host = context.Request.Host.Host;
-                if (!string.IsNullOrWhiteSpace(host))
+                // Una IP no tiene subdominio. Sin este corte, 192.168.1.10 tiene cuatro segmentos y
+                // resolvia el tenant "192": las llamadas por IP (sondas, pruebas, trafico interno)
+                // entraban con un tenant inventado.
+                if (!string.IsNullOrWhiteSpace(host) && !IPAddress.TryParse(host, out _))
                 {
                     var segments = host.Split('.', StringSplitOptions.RemoveEmptyEntries);
                     if (segments.Length >= 3)

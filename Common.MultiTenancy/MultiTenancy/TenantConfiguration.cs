@@ -78,35 +78,41 @@ namespace Common.MultiTenancy
     }
 
     /// <summary>
-    /// <see cref="ITenantConnectionStringResolver"/> que busca primero en la configuracion del
-    /// tenant y despues en <c>ConnectionStrings</c> global.
+    /// <see cref="ITenantConnectionStringResolver"/> que devuelve solo la cadena configurada para el
+    /// propio tenant en <c>MultiTenancy:Tenants:{id}:ConnectionStrings</c>.
     /// </summary>
+    /// <remarks>
+    /// Nunca cae a <c>ConnectionStrings</c> global. Hasta la v2.1.2 lo hacia, y un tenant sin cadena
+    /// propia, o fuera del catalogo, recibia la base compartida o la de otro: trabajaba sobre datos
+    /// ajenos sin ningun error. Ahora eso falla.
+    /// </remarks>
     public sealed class TenantConnectionStringResolver : ITenantConnectionStringResolver
     {
         private readonly ITenantConfigurationStore _tenantConfigurationStore;
-        private readonly IConfiguration _configuration;
 
         /// <summary>
         /// Crea el resolvedor.
         /// </summary>
         /// <param name="tenantConfigurationStore">Almacen de configuracion de tenants.</param>
-        /// <param name="configuration">Configuracion de la que se lee <c>ConnectionStrings</c> global.</param>
+        /// <param name="configuration">
+        /// Ya no se usa: se conserva para no romper a quien construye el resolvedor a mano. Antes se
+        /// leia de aqui la cadena global de respaldo, que se quito.
+        /// </param>
         public TenantConnectionStringResolver(
             ITenantConfigurationStore tenantConfigurationStore,
             IConfiguration configuration)
         {
             _tenantConfigurationStore = tenantConfigurationStore;
-            _configuration = configuration;
+            _ = configuration;
         }
 
         /// <summary>
-        /// Busca la cadena de conexion: primero en <see cref="TenantOptions.ConnectionStrings"/> del
-        /// tenant y, si no esta ahi o esta vacia, en <c>ConnectionStrings:{name}</c> global.
+        /// Busca la cadena <paramref name="name"/> en <see cref="TenantOptions.ConnectionStrings"/> del
+        /// tenant.
         /// </summary>
         /// <remarks>
-        /// Un <paramref name="name"/> vacio se trata como <c>"Default"</c>. El respaldo global
-        /// tambien se usa cuando el tenant no esta configurado: un tenant desconocido obtiene la
-        /// cadena compartida. Un <paramref name="tenantId"/> vacio devuelve <c>false</c>.
+        /// Un <paramref name="name"/> vacio se trata como <c>"Default"</c>. Devuelve <c>false</c> si el
+        /// tenant esta vacio, no esta en el catalogo o no tiene esa cadena: nunca usa la global.
         /// </remarks>
         /// <param name="tenantId">Id del tenant.</param>
         /// <param name="name">Nombre de la cadena de conexion.</param>
@@ -129,13 +135,6 @@ namespace Common.MultiTenancy
                 return true;
             }
 
-            var fallbackConnectionString = _configuration.GetConnectionString(normalizedName);
-            if (!string.IsNullOrWhiteSpace(fallbackConnectionString))
-            {
-                connectionString = fallbackConnectionString;
-                return true;
-            }
-
             return false;
         }
 
@@ -146,7 +145,7 @@ namespace Common.MultiTenancy
         /// <param name="name">Nombre de la cadena de conexion. Por defecto <c>"Default"</c>.</param>
         /// <returns>La cadena de conexion.</returns>
         /// <exception cref="InvalidOperationException">
-        /// Si no hay cadena para el tenant ni global, o si <paramref name="tenantId"/> esta vacio.
+        /// Si el tenant no tiene esa cadena, no esta en el catalogo, o <paramref name="tenantId"/> esta vacio.
         /// </exception>
         public string GetRequiredConnectionString(string tenantId, string name = "Default")
         {

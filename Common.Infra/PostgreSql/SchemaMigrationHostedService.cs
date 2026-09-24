@@ -25,8 +25,10 @@ namespace Common.PostgreSql
     /// salta sin registrarse.
     /// </para>
     /// <para>
-    /// Ante una <c>NpgsqlException</c> (directa o como excepcion interna) reintenta hasta 20 veces,
-    /// esperando 1 s, 2 s... hasta 5 s entre intentos, y en cada intento vuelve a leer lo ya aplicado.
+    /// Ante una <c>NpgsqlException</c> transitoria (directa o como excepcion interna; ver
+    /// <c>NpgsqlException.IsTransient</c>: red, timeouts, base arrancando, demasiadas conexiones)
+    /// reintenta hasta 20 veces, esperando 1 s, 2 s... hasta 5 s entre intentos, y en cada intento
+    /// vuelve a leer lo ya aplicado. Un error del propio SQL no es transitorio: falla a la primera.
     /// Cualquier otro error, o el ultimo intento, se registra y se relanza: el host no arranca.
     /// </para>
     /// <para>
@@ -192,11 +194,16 @@ namespace Common.PostgreSql
             return candidateInOutput;
         }
 
-        private static bool IsTransientConnectivityError(Exception exception)
+        // Solo lo que Npgsql marca como transitorio: red, timeouts y los estados de Postgres que
+        // significan "vuelve a intentar" (57P03 la base esta arrancando, 53300 demasiadas
+        // conexiones...). Antes bastaba con ser NpgsqlException, y PostgresException hereda de ella:
+        // un error de sintaxis en un script se reintentaba 20 veces, unos 85 s, con avisos de "la
+        // base aun no esta lista" que no eran ciertos.
+        internal static bool IsTransientConnectivityError(Exception exception)
         {
-            if (exception is NpgsqlException)
+            if (exception is NpgsqlException npgsqlException)
             {
-                return true;
+                return npgsqlException.IsTransient;
             }
 
             return exception.InnerException is not null && IsTransientConnectivityError(exception.InnerException);

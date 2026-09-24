@@ -51,8 +51,9 @@ namespace Common.MultiTenancy
         public bool ResolveFromQueryString { get; set; }
 
         /// <summary>
-        /// Resolver el tenant desde el primer segmento del host cuando tiene 3 o mas segmentos
-        /// y no esta en <see cref="IgnoredSubdomains"/>. Por defecto <c>true</c>.
+        /// Resolver el tenant desde el primer segmento del host cuando el host es un nombre (no una
+        /// direccion IP), tiene 3 o mas segmentos y ese segmento no esta en <see cref="IgnoredSubdomains"/>.
+        /// Por defecto <c>true</c>.
         /// </summary>
         public bool ResolveFromSubdomain { get; set; } = true;
 
@@ -89,8 +90,8 @@ namespace Common.MultiTenancy
         public Dictionary<string, string> Settings { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Cadenas de conexion propias del tenant, por nombre (sin distinguir mayusculas). Si
-        /// falta una, se usa la de <c>ConnectionStrings</c> global con el mismo nombre.
+        /// Cadenas de conexion propias del tenant, por nombre (sin distinguir mayusculas). Si falta
+        /// una, pedirla falla: no se usa la de <c>ConnectionStrings</c> global.
         /// </summary>
         public Dictionary<string, string> ConnectionStrings { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }

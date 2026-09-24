@@ -55,26 +55,33 @@ namespace Common.MultiTenancy
         /// Tenant actual, o <c>null</c> si no hay.
         /// </summary>
         /// <remarks>
-        /// Al asignar, primero se vacia el contenedor actual, y ese contenedor es un objeto
-        /// compartido con los flujos de los que este deriva: vaciarlo tambien deja sin tenant
-        /// a quien lo habia puesto. Despues, si el valor no es <c>null</c>, se crea un contenedor
-        /// nuevo solo para este flujo y sus derivados.
+        /// Asignar un tenant crea un contenedor nuevo para este flujo y sus derivados, sin tocar el del
+        /// flujo que lo llamo. Asignar <c>null</c> vacia el contenedor actual, de modo que todo lo que
+        /// derivo de el (por ejemplo, trabajo lanzado durante una peticion que ya termino) deja de ver
+        /// el tenant.
         /// </remarks>
         public TenantContext? Current
         {
             get => Holder.Value?.Context;
             set
             {
-                var current = Holder.Value;
-                if (current is not null)
+                if (value is null)
                 {
-                    current.Context = null;
+                    // Fin de alcance: se vacia el contenedor para que los flujos derivados que lo
+                    // capturaron tampoco vean ya el tenant.
+                    var current = Holder.Value;
+                    if (current is not null)
+                    {
+                        current.Context = null;
+                    }
+
+                    return;
                 }
 
-                if (value is not null)
-                {
-                    Holder.Value = new TenantContextHolder { Context = value };
-                }
+                // Un tenant nuevo NO vacia el contenedor anterior. Antes si lo hacia, y ese
+                // contenedor se comparte con el flujo que llamo: un RunAsync dentro de una
+                // peticion con tenant dejaba a la peticion sin tenant al volver.
+                Holder.Value = new TenantContextHolder { Context = value };
             }
         }
 

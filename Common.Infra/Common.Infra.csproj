@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Common.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Common.Contracts/Common.Contracts.csproj" />
     <ProjectReference Include="../Common.Messaging/Common.Messaging.csproj" />
     <ProjectReference Include="../Common.MultiTenancy/Common.MultiTenancy.csproj" />

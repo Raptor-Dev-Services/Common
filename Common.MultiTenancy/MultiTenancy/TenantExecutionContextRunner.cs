@@ -35,9 +35,8 @@ namespace Common.MultiTenancy
     /// <see cref="LogContext"/> de Serilog; al terminar restaura el tenant y la etiqueta anteriores.
     /// </summary>
     /// <remarks>
-    /// No valida que el tenant exista ni que este habilitado. Ver la nota de
-    /// <see cref="TenantContextAccessor.Current"/>: si se llama desde un flujo que ya tenia
-    /// tenant, al volver ese flujo puede quedarse sin el.
+    /// No valida que el tenant exista ni que este habilitado. Se puede llamar desde un flujo que ya
+    /// tiene tenant: al volver, ese flujo conserva el suyo.
     /// </remarks>
     public sealed class TenantExecutionContextRunner : ITenantExecutionContextRunner
     {
