@@ -1,7 +1,7 @@
 # Especificacion de Requisitos de Software (SRS)
 ## Para Common - libreria base para WebApi .NET
 
-Version 1.1 del documento, para `Common` v2.1.1
+Version 1.2 del documento, para `Common` v2.1.2
 Preparado por Rogelio Arriaga
 Raptor Dev Services
 2026-09-24
@@ -42,6 +42,7 @@ Raptor Dev Services
 |---|---|---|---|
 | Rogelio Arriaga | 2026-09-24 | Primera version: requisitos extraidos del codigo de `aedf830` y de los ADR 0001-0008. | 1.0 |
 | Rogelio Arriaga | 2026-09-24 | REQ-SEC-004 y REQ-COMP-001 pasan a cumplirse (v2.1.1); REQ-SEC-001 cubre diccionarios. | 1.1 |
+| Rogelio Arriaga | 2026-09-24 | v2.1.2: REQ-FUNC-003, 008, 012 y 013 con prueba; nuevos REQ-SEC-005 a 007 y REQ-MAINT-003; REQ-FUNC-009, REQ-FUNC-011 y REQ-REL-002 marcados como no cumplidos tras comprobarlo. | 1.2 |
 
 ## 1. Introduccion
 
@@ -163,9 +164,9 @@ No hay SLA: es una libreria, no un servicio. El soporte es el del mantenedor.
 |---|---|
 | `Common.Contracts` | REQ-FUNC-001, REQ-FUNC-002 |
 | `Common.Messaging` | REQ-FUNC-003, REQ-FUNC-004 (contratos) |
-| `Common.MultiTenancy` | REQ-FUNC-007, REQ-FUNC-009, REQ-FUNC-011 |
+| `Common.MultiTenancy` | REQ-FUNC-007, REQ-FUNC-009, REQ-FUNC-011; REQ-SEC-006, 007 |
 | `Common.Infra` | REQ-FUNC-003 a 006, 010, 015 a 020; REQ-OBS-001 a 004; REQ-SEC-001, 004; REQ-REL-001 a 003 |
-| `Common.Web` | REQ-FUNC-008, 012 a 014; REQ-SEC-002, 003 |
+| `Common.Web` | REQ-FUNC-008, 012 a 014; REQ-SEC-002, 003, 005 |
 | Solucion completa | REQ-MAINT, REQ-BUILD, REQ-PORT, REQ-DIST, REQ-CM, REQ-COMP |
 
 ## 3. Requisitos
@@ -243,8 +244,10 @@ No aplica.
   ejecutarlo envuelto en todos los `IPipelineBehavior` registrados, en orden de registro (el primero
   registrado es el mas externo).
 - Criterios de aceptacion: sin handler registrado lanza `InvalidOperationException` con el nombre
-  del tipo; una peticion nula lanza `ArgumentNullException`.
-- Verificacion: Sin prueba (ver seccion 4)
+  del tipo; una peticion nula lanza `ArgumentNullException`. Una excepcion del handler o de un
+  behavior sale de `Send` tal cual se lanzo, sea el metodo async o no (hasta la v2.1.1 salia envuelta
+  en `TargetInvocationException` si se lanzaba antes del primer `await`).
+- Verificacion: Prueba
 
 - ID: REQ-FUNC-004
 - Titulo: Publicacion de una notificacion
@@ -284,13 +287,16 @@ No aplica.
   `RejectUnknownTenants` esta activo y hay catalogo. Si lo admite, debe fijar el contexto de tenant,
   devolver el tenant en la cabecera de respuesta, etiquetar la traza con `tenant.id`, abrir un scope de
   log con `TenantId` y limpiar el contexto al terminar el request.
-- Verificacion: Sin prueba
+- Criterios de aceptacion: los tres rechazos se declaran `application/problem+json`.
+- Verificacion: Prueba (los rechazos); el resto, sin prueba
 
 - ID: REQ-FUNC-009
 - Titulo: Tenant fuera de HTTP
 - Enunciado: `ITenantExecutionContextRunner.RunAsync` debe ejecutar trabajo (jobs, consumidores) con
   un tenant fijado, de modo que logs, trazas y fabricas de conexion lo vean como si fuera un request.
-- Verificacion: Sin prueba
+  Al volver, el flujo que lo llamo debe conservar el tenant que tenia.
+- Verificacion: Prueba. **Estado: no se cumple**: llamado desde un flujo con tenant, ese flujo queda
+  sin tenant al volver (comprobado el 2026-09-24).
 
 - ID: REQ-FUNC-010
 - Titulo: Propagacion del tenant
@@ -302,23 +308,24 @@ No aplica.
 - Titulo: Cadena de conexion por tenant
 - Enunciado: `ITenantConnectionStringResolver` debe devolver la cadena de conexion nombrada del
   tenant desde el catalogo de configuracion, y `GetRequiredConnectionString` debe lanzar si no existe.
-- Verificacion: Sin prueba
+- Verificacion: Prueba. **Estado: no se cumple**: si el tenant no tiene la cadena, o no esta en el
+  catalogo, devuelve la global `ConnectionStrings:{nombre}` en vez de lanzar (ver REQ-SEC-006).
 
 #### Web
 
 - ID: REQ-FUNC-012
 - Titulo: Identificador de correlacion
-- Enunciado: `UseCorrelationId` debe reutilizar `X-Correlation-Id` si llega en el request o generar
-  uno nuevo, devolverlo en la respuesta, etiquetar la traza con `correlation_id` y abrir un scope de log
-  con `CorrelationId`.
-- Verificacion: Sin prueba
+- Enunciado: `UseCorrelationId` debe reutilizar `X-Correlation-Id` si llega en el request, saneado
+  segun REQ-SEC-005, o generar uno nuevo; devolverlo en la respuesta, etiquetar la traza con
+  `correlation_id` y abrir un scope de log con `CorrelationId`.
+- Verificacion: Prueba
 
 - ID: REQ-FUNC-013
 - Titulo: Errores como ProblemDetails
 - Enunciado: `UseCoreProblemDetails` debe convertir una `BusinessRuleException` no atrapada en
   **400** con su mensaje, y cualquier otra excepcion en **500** con un mensaje generico. Ambas
   respuestas deben ser `application/problem+json` e incluir `traceId` y, si lo hay, `tenantId`.
-- Verificacion: Sin prueba
+- Verificacion: Prueba (hasta la v2.1.1 el `Content-Type` salia como `application/json`)
 
 - ID: REQ-FUNC-014
 - Titulo: Envelope de respuesta
@@ -417,6 +424,29 @@ No aplica.
   sale como `***` y el resto conserva su valor.
 - Verificacion: Prueba
 
+- ID: REQ-SEC-005
+- Titulo: El id de correlacion del cliente se sanea
+- Enunciado: Del `X-Correlation-Id` recibido solo deben conservarse letras, digitos y `- _ . :`,
+  hasta 128 caracteres; si no queda nada, se genera un id nuevo.
+- Razon: el valor termina en los logs y en la respuesta. Hasta la v2.1.1 se copiaba tal cual, y un
+  cliente podia meter saltos de linea en los logs (log forging) o inflarlos.
+- Verificacion: Prueba
+
+- ID: REQ-SEC-006
+- Titulo: Un tenant nunca recibe la base de otro
+- Enunciado: Si un tenant no tiene configurada la cadena de conexion pedida, o no esta en el
+  catalogo, la resolucion debe fallar; no debe devolver la cadena global.
+- Razon: con una base por tenant, la cadena global es la de otro (o la compartida). Un tenant mal
+  configurado trabajaria sobre datos ajenos sin ningun error.
+- Verificacion: Prueba. **Estado: no se cumple** (comprobado el 2026-09-24). Mitigacion documentada
+  en la guia 06: no definir la cadena global cuando hay una base por tenant.
+
+- ID: REQ-SEC-007
+- Titulo: Un host que no es un nombre no resuelve tenant
+- Enunciado: La resolucion por subdominio no debe tomar un tenant de un host que es una direccion IP.
+- Razon: con la configuracion por defecto, `192.168.1.10` resuelve el tenant `"192"`.
+- Verificacion: Prueba. **Estado: no se cumple** (comprobado el 2026-09-24).
+
 #### 3.3.3 Confiabilidad
 
 - ID: REQ-REL-001
@@ -428,8 +458,10 @@ No aplica.
 - ID: REQ-REL-002
 - Titulo: Migraciones tolerantes a una base que aun no esta lista
 - Enunciado: Ante un error de conectividad de Npgsql, las migraciones deben reintentar hasta 20 veces
-  con espera creciente (1 s por intento, maximo 5 s) antes de fallar.
-- Verificacion: Sin prueba
+  con espera creciente (1 s por intento, maximo 5 s) antes de fallar. Un error del propio SQL debe
+  fallar a la primera.
+- Verificacion: Inspeccion. **Estado: no se cumple en la segunda parte**: `PostgresException` hereda de
+  `NpgsqlException`, asi que un error de sintaxis tambien se reintenta (unos 85 s antes de fallar).
 
 - ID: REQ-REL-003
 - Titulo: La telemetria es opcional
@@ -544,6 +576,12 @@ No aplica: `Common` no se ejecuta por si sola. La disponibilidad es de cada cons
   registrarse como ADR en `docs/adr/`.
 - Verificacion: Inspeccion
 
+- ID: REQ-MAINT-003
+- Titulo: API publica documentada
+- Enunciado: Todo tipo y miembro publico de los cinco ensamblados debe tener comentario XML, y los
+  proyectos deben generar el archivo de documentacion para que el IDE del consumidor lo muestre.
+- Verificacion: Prueba (el build con CS1591 activo termina sin warnings)
+
 #### 3.5.5 Reutilizacion
 
 - ID: REQ-REUSE-001
@@ -594,11 +632,14 @@ No aplica: `Common` no incorpora modelos de aprendizaje automatico.
 
 ## 4. Verificacion
 
-Estado medido el 2026-09-24 sobre la v2.1.1: `dotnet build Common.slnx -c Release` con **0 warnings
-y 0 errores**, `dotnet test` con **17 de 17** pruebas en verde (en
-`Common.Tests/SensitiveDataMaskerTests.cs` y `Common.Tests/DapperSqlDbConnectionLogTests.cs`), y la
-puerta de dependencias en **verde**. Las guardas de REQ-SEC-004 y de los diccionarios de REQ-SEC-001
-se validaron quitandolas una por una: cada una tumba su prueba.
+Estado medido el 2026-09-24 sobre la v2.1.2: `dotnet build Common.slnx -c Release` con **0 warnings
+y 0 errores** (con CS1591 activo), `dotnet test` con **29 de 29** pruebas en verde, y la puerta de
+dependencias en **verde**. Cada arreglo con prueba se valido quitandolo: su prueba cae.
+
+Ademas, la guia de uso se ejercito con dos APIs de prueba desechables, una con los paquetes de
+nuget.org y otra con el codigo por `ProjectReference` dentro de un repo con gestion central de
+paquetes y `TreatWarningsAsErrors`. Los ejemplos de datos y migraciones se compilaron pero no se
+ejecutaron contra una base.
 
 | Requisito | Metodo | Artefacto | Estado |
 |---|---|---|---|
@@ -609,16 +650,24 @@ se validaron quitandolas una por una: cada una tumba su prueba.
 | REQ-BUILD-002 | Prueba | `dotnet build Common.slnx` | Cumple |
 | REQ-MAINT-001 | Inspeccion | los seis `.csproj` | Cumple |
 | REQ-COMP-001 | Inspeccion | `LICENSE` en ambos repositorios | Cumple desde v2.1.1 |
-| REQ-FUNC-003 a 013, 015, 017 | Prueba | - | Sin prueba automatizada |
-| REQ-SEC-003, REQ-REL-002, REQ-OBS-004 | Prueba | - | Sin prueba automatizada |
+| REQ-FUNC-003 | Prueba | `Common.Tests/MediatorExceptionTests.cs` | Cumple desde v2.1.2 |
+| REQ-FUNC-008 (rechazos), REQ-SEC-003 | Prueba | `Common.Tests/TenantResolutionContentTypeTests.cs` | Cumple desde v2.1.2 |
+| REQ-FUNC-012, REQ-SEC-005 | Prueba | `Common.Tests/MediatorExceptionTests.cs` (`CorrelationIdTests`) | Cumple desde v2.1.2 |
+| REQ-FUNC-013 | Prueba | `MediatorExceptionTests.cs` (`ProblemDetailsContentTypeTests`) | Cumple desde v2.1.2 |
+| REQ-MAINT-003 | Prueba | `dotnet build` con CS1591 | Cumple desde v2.1.2 |
+| REQ-FUNC-009 | Prueba | - | **No cumple**: el flujo que llama pierde su tenant |
+| REQ-FUNC-011, REQ-SEC-006 | Prueba | - | **No cumple**: cae a la cadena global |
+| REQ-SEC-007 | Prueba | - | **No cumple**: una IP resuelve tenant |
+| REQ-REL-002 | Inspeccion | - | **No cumple** en la segunda parte: reintenta errores de SQL |
+| REQ-FUNC-004 a 007, 010, 015, 017 | Prueba | - | Sin prueba automatizada |
+| REQ-OBS-004 | Prueba | - | Sin prueba automatizada |
 | REQ-INT-*, REQ-FUNC-001, 002, 014, 016, 018 a 020 | Inspeccion | codigo fuente | Cumple por inspeccion |
 | REQ-OBS-001, 003, REQ-INT-004, REQ-INST-001, REQ-PORT-001 | Demostracion | un consumidor corriendo | Cumple en los consumidores; sin prueba en la libreria |
 | REQ-PERF-001 | Analisis | - | Pendiente |
 
-**La brecha principal es de pruebas:** el mediator, la multi-tenencia, los middlewares y las
-migraciones solo se prueban a traves de los consumidores. Son los candidatos naturales para las
-siguientes pruebas, empezando por REQ-FUNC-008 y REQ-SEC-003, que son los que protegen el aislamiento
-entre tenants.
+**Lo mas urgente son los cuatro "no cumple"**, y de ellos REQ-SEC-006: es el unico que puede mezclar
+datos entre tenants sin dar ningun error. Despues, la brecha de pruebas: la multi-tenencia, el
+registro del mediator y las migraciones solo se prueban a traves de los consumidores.
 
 ## 5. Apendices
 

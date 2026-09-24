@@ -9,8 +9,7 @@
 
 ## Contexto
 
-`Common` la consumen varios productos (ArccNova, Zeit, hospital-core, C-MSA) que evolucionan a ritmos
-distintos. Cada uno tiene que compilar igual hoy que dentro de seis meses, y poder depurar dentro de
+`Common` la consumen varios productos de la organizacion que evolucionan a ritmos distintos. Cada uno tiene que compilar igual hoy que dentro de seis meses, y poder depurar dentro de
 `Common` sin salir de su propio repo.
 
 ---
