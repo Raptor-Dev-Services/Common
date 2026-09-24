@@ -6,7 +6,7 @@ Cambios de cada version, con lo que hay que hacer para subir. Sigue
 La version es la del tag de git (`vX.Y.Z`) y la del paquete `Raptor.Common.*` en nuget.org: el
 mismo numero es el mismo codigo.
 
-## [2.1.2] - sin publicar
+## [2.1.2] - 2026-09-24
 
 ### Corregido
 - **Una `BusinessRuleException` lanzada de forma sincrona respondia 500 en vez de 400.** El mediator
