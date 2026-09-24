@@ -99,6 +99,20 @@ namespace Common.Messaging
                 return valor;
             }
 
+            // Un diccionario se tapa por CLAVE, igual que un objeto por nombre de propiedad.
+            // Sin esto caia en la rama de coleccion y cada entrada salia como {Key, Value}:
+            // la clave "Password" no es sensible como nombre de propiedad ("Key"), y el valor
+            // se escribia en claro. Es la forma normal de pasar parametros a Dapper.
+            if (valor is IDictionary diccionario)
+            {
+                return EnmascararEntradas(Entradas(diccionario), profundidad);
+            }
+
+            if (valor is IEnumerable<KeyValuePair<string, object?>> pares)   // ExpandoObject
+            {
+                return EnmascararEntradas(pares.Select(p => (p.Key, p.Value)), profundidad);
+            }
+
             if (valor is IEnumerable enumerable)
             {
                 var lista = new List<object?>();
@@ -126,6 +140,29 @@ namespace Common.Messaging
 
                 try   { salida[p.Name] = Enmascarar(p.GetValue(valor), profundidad + 1); }
                 catch { salida[p.Name] = "<no legible>"; }
+            }
+            return salida;
+        }
+
+        // Por el enumerador de IDictionary y no con Cast<DictionaryEntry>(): un Dictionary<,>
+        // se enumera como KeyValuePair aunque se le trate como IDictionary, y el Cast lanza.
+        private static IEnumerable<(string Clave, object? Valor)> Entradas(IDictionary diccionario)
+        {
+            var e = diccionario.GetEnumerator();
+            while (e.MoveNext())
+            {
+                yield return (Convert.ToString(e.Key) ?? string.Empty, e.Value);
+            }
+        }
+
+        private static Dictionary<string, object?> EnmascararEntradas(
+            IEnumerable<(string Clave, object? Valor)> entradas, int profundidad)
+        {
+            var salida = new Dictionary<string, object?>();
+            foreach (var (clave, valor) in entradas)
+            {
+                if (salida.Count >= 50) { salida["..."] = "..."; break; }
+                salida[clave] = EsSensible(clave) ? Tapado : Enmascarar(valor, profundidad + 1);
             }
             return salida;
         }

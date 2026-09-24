@@ -211,4 +211,51 @@ public sealed class SensitiveDataMaskerTests
         // Y las exenciones legitimas siguen funcionando.
         Assert.False(SensitiveDataMasker.EsSensible("AccessTokenExpiresAt"));
     }
+
+    [Fact]
+    public void Un_diccionario_se_tapa_por_clave()
+    {
+        // Antes un diccionario caia en la rama de coleccion y cada entrada salia como
+        // {Key: "Password", Value: "<en claro>"}: el nombre de la propiedad era "Value", que
+        // no es sensible. Es la forma normal de pasar parametros a Dapper.
+        var d = Assert.IsType<Dictionary<string, object?>>(
+            SensitiveDataMasker.Enmascarar(new Dictionary<string, object?>
+            {
+                ["Email"] = "ana@ejemplo.test",
+                ["PasswordHash"] = "AQAAAAIAAYagAAAAE-hash",
+            }));
+
+        Assert.Equal(SensitiveDataMasker.Tapado, d["PasswordHash"]);
+        Assert.Equal("ana@ejemplo.test", d["Email"]);
+    }
+
+    [Fact]
+    public void Un_diccionario_con_valores_tipados_tambien_se_tapa_por_clave()
+    {
+        // Un Dictionary<string, object?> lo atrapa la rama de pares clave-valor; uno con
+        // valores tipados no es IEnumerable<KeyValuePair<string, object?>> y solo lo cubre
+        // la rama de IDictionary. Sin esta prueba, quitar esa rama no rompia nada.
+        var d = Assert.IsType<Dictionary<string, object?>>(
+            SensitiveDataMasker.Enmascarar(new Dictionary<string, string>
+            {
+                ["Email"] = "ana@ejemplo.test",
+                ["ClientSecret"] = "cs_live_123",
+            }));
+
+        Assert.Equal(SensitiveDataMasker.Tapado, d["ClientSecret"]);
+        Assert.Equal("ana@ejemplo.test", d["Email"]);
+    }
+
+    [Fact]
+    public void Un_ExpandoObject_se_tapa_por_clave()
+    {
+        dynamic expando = new System.Dynamic.ExpandoObject();
+        expando.ApiKey = "sk_live_123";
+        expando.Nombre = "visible";
+
+        var d = Assert.IsType<Dictionary<string, object?>>(SensitiveDataMasker.Enmascarar((object)expando));
+
+        Assert.Equal(SensitiveDataMasker.Tapado, d["ApiKey"]);
+        Assert.Equal("visible", d["Nombre"]);
+    }
 }

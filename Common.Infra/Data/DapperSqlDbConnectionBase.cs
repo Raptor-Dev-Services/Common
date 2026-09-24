@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
+using Common.Messaging;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -191,6 +192,11 @@ namespace Common.Data
             const string messageWithSql = "SQL {QueryName} {Outcome} in {ElapsedMs} ms | hash: {SqlHash} | sql: {SqlText} | params: {@Params}";
             const string messageWithoutSql = "SQL {QueryName} {Outcome} in {ElapsedMs} ms | hash: {SqlHash} | params: {@Params}";
 
+            // Los parametros pasan por el mismo enmascarado que el pipeline. Antes se
+            // registraban tal cual, y el INSERT de un usuario dejaba su hash de contrasena en
+            // el log: la misma fuga que se cerro en InteractorPipeline, por otra puerta.
+            param = ParametrosParaLog(param);
+
             if (_includeSqlText)
             {
                 if (ex is null)
@@ -213,6 +219,32 @@ namespace Common.Data
             {
                 _logger.Log(level, ex, messageWithoutSql, queryName, outcome, elapsedMs, sqlHash, param);
             }
+        }
+
+        private static object? ParametrosParaLog(object? param)
+        {
+            // DynamicParameters no expone sus valores como propiedades: sin esto el log solo
+            // veria ParameterNames. Se pasa a diccionario, y un nombre sensible se tapa sin
+            // leer su valor, igual que hace el enmascarado con una propiedad.
+            if (param is DynamicParameters dynamicParameters)
+            {
+                var valores = new Dictionary<string, object?>();
+                foreach (var nombre in dynamicParameters.ParameterNames)
+                {
+                    if (SensitiveDataMasker.EsSensible(nombre))
+                    {
+                        valores[nombre] = SensitiveDataMasker.Tapado;
+                        continue;
+                    }
+
+                    try   { valores[nombre] = dynamicParameters.Get<object?>(nombre); }
+                    catch { valores[nombre] = "<no legible>"; }
+                }
+
+                return SensitiveDataMasker.Enmascarar(valores);
+            }
+
+            return SensitiveDataMasker.Enmascarar(param);
         }
 
         private static string ResolveQueryName(string? queryName, string fallbackName)

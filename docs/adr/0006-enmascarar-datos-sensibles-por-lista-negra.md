@@ -53,3 +53,7 @@ lo que describe al secreto sin contenerlo (`AccessTokenExpiresAt`).
   codigo dice que un producto puede sumar los suyos, y hoy no puede. Un termino nuevo va en `Common`.
 - **Solo cubre el pipeline.** `DapperSqlDbConnectionBase` registra `{@Params}` sin enmascarar: los
   parametros de un `INSERT` de usuarios llegan al log tal cual.
+
+> **Nota posterior (2026-09-24, v2.1.1).** La decision no cambia; se amplia su alcance. Los
+> parametros SQL ya pasan por el mismo enmascarado, y los diccionarios se tapan por clave (antes
+> salian como pares `{Key, Value}` con el valor en claro). Ver REQ-SEC-004 en el SRS.
