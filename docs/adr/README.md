@@ -37,5 +37,6 @@ central nueva o que se va, un cambio de frontera entre ensamblados, un contrato 
 una politica que afecta a todos (logging, seguridad, versionado). Un metodo nuevo o un arreglo
 interno no llevan ADR; llevan buen mensaje de commit.
 
-> Este repo tiene un espejo personal que se publica en nuget.org (`Raptor057/ApiCommon`). Las
-> decisiones que son solo de ese espejo viven alla, en `docs/adr-nuget/`, y no aqui.
+> `Raptor-Dev-Services/Common` tiene un espejo que se publica en nuget.org (`Raptor057/ApiCommon`),
+> con esta misma carpeta copiada tal cual. Las decisiones que son solo del espejo viven alla, en
+> `docs/adr-nuget/`, con su propia numeracion.

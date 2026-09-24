@@ -470,10 +470,10 @@ No aplica: `Common` no se ejecuta por si sola. La disponibilidad es de cada cons
 - ID: REQ-COMP-001
 - Titulo: Licencia declarada
 - Enunciado: Cada canal de distribucion debe declarar la licencia bajo la que se usa el codigo.
-- Razon: el espejo en nuget.org declara MIT (`LICENSE` y `PackageLicenseExpression`), pero este
-  repositorio es publico y no tiene archivo de licencia, lo que por defecto significa "todos los
-  derechos reservados".
-- Verificacion: Inspeccion. **Estado: no se cumple en este repositorio** (ver seccion 4).
+- Razon: el espejo `Raptor057/ApiCommon` declara MIT (`LICENSE` y `PackageLicenseExpression`), pero
+  `Raptor-Dev-Services/Common` es publico y no tiene archivo de licencia, lo que por defecto significa
+  "todos los derechos reservados". El mismo codigo queda con dos licencias distintas segun por donde llegue.
+- Verificacion: Inspeccion. **Estado: no se cumple en `Raptor-Dev-Services/Common`** (ver seccion 4).
 
 ### 3.5 Diseno e implementacion
 
@@ -599,11 +599,11 @@ y 0 errores**, `dotnet test` con **12 de 12** pruebas en verde (todas en
 | REQ-BUILD-002 | Prueba | `dotnet build Common.slnx` | Cumple |
 | REQ-MAINT-001 | Inspeccion | los seis `.csproj` | Cumple |
 | REQ-SEC-004 | Prueba | - | **No cumple**: `DapperSqlDbConnectionBase` registra `{@Params}` sin enmascarar |
-| REQ-COMP-001 | Inspeccion | - | **No cumple** en este repo: no hay archivo `LICENSE` |
+| REQ-COMP-001 | Inspeccion | - | **No cumple** en `Raptor-Dev-Services/Common`: no hay archivo `LICENSE` (el espejo si lo tiene) |
 | REQ-FUNC-003 a 013, 015, 017 | Prueba | - | Sin prueba automatizada |
 | REQ-SEC-003, REQ-REL-002, REQ-OBS-004 | Prueba | - | Sin prueba automatizada |
 | REQ-INT-*, REQ-FUNC-001, 002, 014, 016, 018 a 020 | Inspeccion | codigo fuente | Cumple por inspeccion |
-| REQ-OBS-001, 003, REQ-INT-004, REQ-INST-001, REQ-PORT-001 | Demostracion | un consumidor corriendo | Cumple en los consumidores; sin prueba en este repo |
+| REQ-OBS-001, 003, REQ-INT-004, REQ-INST-001, REQ-PORT-001 | Demostracion | un consumidor corriendo | Cumple en los consumidores; sin prueba en la libreria |
 | REQ-PERF-001 | Analisis | - | Pendiente |
 
 **La brecha principal es de pruebas:** el mediator, la multi-tenencia, los middlewares y las

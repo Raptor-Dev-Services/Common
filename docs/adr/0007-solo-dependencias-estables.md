@@ -45,5 +45,5 @@ excepcion valida es un paquete que **nunca** ha publicado una estable, y se decl
 
 **Negativas / trade-offs a vigilar:**
 - Obligo a sacar el exportador de Prometheus ([ADR-0005](0005-metricas-y-trazas-solo-por-otlp.md)).
-- Este repo no tiene CI propio: la puerta corre en local y en los consumidores. En el espejo
-  `Raptor057/ApiCommon` si corre en CI, en cada push y antes de publicar.
+- `Raptor-Dev-Services/Common` no tiene CI propio: ahi la puerta corre en local y en los
+  consumidores. En el espejo `Raptor057/ApiCommon` si corre en CI, en cada push y antes de publicar.
