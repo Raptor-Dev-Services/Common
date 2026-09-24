@@ -11,6 +11,10 @@ Libreria base reutilizable para WebApi (.NET 10) con logging (Serilog + Seq) y o
 | [`REFACTORING-PLAN.md`](REFACTORING-PLAN.md) | Como se ejecuto la division en sub-librerias (v2.0.0). |
 | [`.claude/rules/stable-dependencies.md`](.claude/rules/stable-dependencies.md) | La regla de dependencias estables y su puerta. |
 
+## Licencia
+
+MIT. Ver [`LICENSE`](LICENSE). Aplica igual al submodulo y a los paquetes de nuget.org.
+
 ## Distribucion
 
 El mismo codigo llega por dos canales ([ADR-0008](docs/adr/0008-consumo-como-submodulo-fijado-a-commit.md)):
@@ -253,6 +257,6 @@ await tenantExecutionContextRunner.RunAsync("tenant-a", async ct =>
   nombre de propiedad: password, token, secret, apikey y compania
   ([ADR-0006](docs/adr/0006-enmascarar-datos-sensibles-por-lista-negra.md)). La lista
   `SensitiveDataMasker.Terminos` es publica pero de solo lectura: un termino nuevo se agrega aqui, en
-  `Common`. **Ojo:** los parametros que registra `DapperSqlDbConnectionBase` todavia no pasan por ese
-  enmascarado.
+  `Common`. Los diccionarios se tapan por clave, y los parametros SQL que registra
+  `DapperSqlDbConnectionBase` pasan por el mismo enmascarado (tambien con `DynamicParameters`).
 - Sin `CustomLogging:LogEventLevel` el nivel es `Verbose`: fijalo siempre en produccion.

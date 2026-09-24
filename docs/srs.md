@@ -1,7 +1,7 @@
 # Especificacion de Requisitos de Software (SRS)
 ## Para Common - libreria base para WebApi .NET
 
-Version 1.0 del documento, para `Common` v2.1.0
+Version 1.1 del documento, para `Common` v2.1.1
 Preparado por Rogelio Arriaga
 Raptor Dev Services
 2026-09-24
@@ -41,6 +41,7 @@ Raptor Dev Services
 | Nombre | Fecha | Motivo del cambio | Version |
 |---|---|---|---|
 | Rogelio Arriaga | 2026-09-24 | Primera version: requisitos extraidos del codigo de `aedf830` y de los ADR 0001-0008. | 1.0 |
+| Rogelio Arriaga | 2026-09-24 | REQ-SEC-004 y REQ-COMP-001 pasan a cumplirse (v2.1.1); REQ-SEC-001 cubre diccionarios. | 1.1 |
 
 ## 1. Introduccion
 
@@ -390,7 +391,8 @@ No aplica.
   sufijo descriptivo (`ExpiresAt`, `Type`, `Length`, `Count`...) no se tapan.
 - Razon: [ADR-0006](adr/0006-enmascarar-datos-sensibles-por-lista-negra.md).
 - Criterios de aceptacion: una peticion de login no deja la contrasena en el log; una respuesta con
-  tokens no los deja; la fecha de caducidad de un token si queda.
+  tokens no los deja; la fecha de caducidad de un token si queda. Un diccionario (o un
+  `ExpandoObject`) se tapa por clave, igual que un objeto por nombre de propiedad.
 - Verificacion: Prueba
 
 - ID: REQ-SEC-002
@@ -409,8 +411,11 @@ No aplica.
 - Titulo: Enmascarado de los parametros SQL en el log
 - Enunciado: Los parametros que `DapperSqlDbConnectionBase` registra deben pasar por el mismo
   enmascarado que REQ-SEC-001.
-- Razon: hoy registra `{@Params}` tal cual, y un `INSERT` de usuarios lleva su hash de contrasena.
-- Verificacion: Prueba. **Estado: no se cumple** (ver seccion 4).
+- Razon: hasta la v2.1.0 registraba `{@Params}` tal cual, y el `INSERT` de un usuario dejaba su hash
+  de contrasena en el log.
+- Criterios de aceptacion: con un objeto anonimo o con `DynamicParameters`, el parametro sensible
+  sale como `***` y el resto conserva su valor.
+- Verificacion: Prueba
 
 #### 3.3.3 Confiabilidad
 
@@ -470,10 +475,12 @@ No aplica: `Common` no se ejecuta por si sola. La disponibilidad es de cada cons
 - ID: REQ-COMP-001
 - Titulo: Licencia declarada
 - Enunciado: Cada canal de distribucion debe declarar la licencia bajo la que se usa el codigo.
-- Razon: el espejo `Raptor057/ApiCommon` declara MIT (`LICENSE` y `PackageLicenseExpression`), pero
-  `Raptor-Dev-Services/Common` es publico y no tiene archivo de licencia, lo que por defecto significa
-  "todos los derechos reservados". El mismo codigo queda con dos licencias distintas segun por donde llegue.
-- Verificacion: Inspeccion. **Estado: no se cumple en `Raptor-Dev-Services/Common`** (ver seccion 4).
+- Razon: hasta la v2.1.0, `Raptor-Dev-Services/Common` era publico y no tenia archivo de licencia
+  (por defecto, "todos los derechos reservados") mientras el espejo `Raptor057/ApiCommon` publicaba
+  el mismo codigo como MIT. El codigo quedaba con dos licencias segun por donde llegara.
+- Criterios de aceptacion: ambos repositorios tienen `LICENSE` MIT, y los paquetes declaran
+  `PackageLicenseExpression` MIT.
+- Verificacion: Inspeccion
 
 ### 3.5 Diseno e implementacion
 
@@ -587,19 +594,21 @@ No aplica: `Common` no incorpora modelos de aprendizaje automatico.
 
 ## 4. Verificacion
 
-Estado medido el 2026-09-24 sobre `aedf830`: `dotnet build Common.slnx -c Release` con **0 warnings
-y 0 errores**, `dotnet test` con **12 de 12** pruebas en verde (todas en
-`Common.Tests/SensitiveDataMaskerTests.cs`), y la puerta de dependencias en **verde**.
+Estado medido el 2026-09-24 sobre la v2.1.1: `dotnet build Common.slnx -c Release` con **0 warnings
+y 0 errores**, `dotnet test` con **17 de 17** pruebas en verde (en
+`Common.Tests/SensitiveDataMaskerTests.cs` y `Common.Tests/DapperSqlDbConnectionLogTests.cs`), y la
+puerta de dependencias en **verde**. Las guardas de REQ-SEC-004 y de los diccionarios de REQ-SEC-001
+se validaron quitandolas una por una: cada una tumba su prueba.
 
 | Requisito | Metodo | Artefacto | Estado |
 |---|---|---|---|
 | REQ-SEC-001 | Prueba | `Common.Tests/SensitiveDataMaskerTests.cs` | Cumple |
+| REQ-SEC-004 | Prueba | `Common.Tests/DapperSqlDbConnectionLogTests.cs` | Cumple desde v2.1.1 |
 | REQ-REL-001 | Prueba | `SensitiveDataMaskerTests` (getter que lanza, grafo ciclico) | Cumple |
 | REQ-BUILD-001 | Prueba | `scripts/check-prerelease-deps.py` | Cumple |
 | REQ-BUILD-002 | Prueba | `dotnet build Common.slnx` | Cumple |
 | REQ-MAINT-001 | Inspeccion | los seis `.csproj` | Cumple |
-| REQ-SEC-004 | Prueba | - | **No cumple**: `DapperSqlDbConnectionBase` registra `{@Params}` sin enmascarar |
-| REQ-COMP-001 | Inspeccion | - | **No cumple** en `Raptor-Dev-Services/Common`: no hay archivo `LICENSE` (el espejo si lo tiene) |
+| REQ-COMP-001 | Inspeccion | `LICENSE` en ambos repositorios | Cumple desde v2.1.1 |
 | REQ-FUNC-003 a 013, 015, 017 | Prueba | - | Sin prueba automatizada |
 | REQ-SEC-003, REQ-REL-002, REQ-OBS-004 | Prueba | - | Sin prueba automatizada |
 | REQ-INT-*, REQ-FUNC-001, 002, 014, 016, 018 a 020 | Inspeccion | codigo fuente | Cumple por inspeccion |
