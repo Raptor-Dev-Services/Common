@@ -1,6 +1,8 @@
 # Plan de refactorizacion — Common en sub-librerias ✅ EJECUTADO (v2.0.0)
 
-> **Estado:** Ejecutado el 2026-06-04.
+> **Estado:** Ejecutado el 2026-06-04. La decision quedo registrada en
+> [ADR-0001](docs/adr/0001-dividir-en-sub-librerias-con-facade.md) y
+> [ADR-0002](docs/adr/0002-multitenancy-como-modulo-base.md); este documento es el registro de la ejecucion.
 > Monolito estable previo: tag `v1.1.0` (commit `b81f5e6`). Resultado modular: tag `v2.0.0`.
 
 ---

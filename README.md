@@ -2,23 +2,53 @@
 
 Libreria base reutilizable para WebApi (.NET 10) con logging (Serilog + Seq) y observabilidad (OpenTelemetry). Incluye resultados estandar, errores, excepciones y contratos de mensajeria.
 
-## Paquetes
+## Documentacion
 
-| Paquete | Version | Proposito tecnico |
+| Documento | Para que |
+|---|---|
+| [`docs/srs.md`](docs/srs.md) | Requisitos: que tiene que hacer la libreria y como se verifica cada cosa. |
+| [`docs/adr/`](docs/adr/README.md) | Decisiones de arquitectura: por que es como es y que se descarto. |
+| [`REFACTORING-PLAN.md`](REFACTORING-PLAN.md) | Como se ejecuto la division en sub-librerias (v2.0.0). |
+| [`.claude/rules/stable-dependencies.md`](.claude/rules/stable-dependencies.md) | La regla de dependencias estables y su puerta. |
+
+## Distribucion
+
+El mismo codigo llega por dos canales ([ADR-0008](docs/adr/0008-consumo-como-submodulo-fijado-a-commit.md)):
+
+| Canal | Para quien | Como |
 |---|---|---|
-| Microsoft.Extensions.Configuration | 10.0.2 | Lectura y binding de configuracion (appsettings, env vars, etc.). |
-| Microsoft.Extensions.DependencyInjection | 10.0.2 | Registro y resolucion de dependencias. |
-| Microsoft.Extensions.Logging | 10.0.2 | Abstracciones de logging. |
-| Microsoft.Extensions.Http.Resilience | 10.2.0 | Resiliencia para llamadas HTTP salientes. |
-| Serilog | 4.3.0 | Logger estructurado. |
-| AspNetCore.HealthChecks.NpgSql | 9.0.0 | Health checks para PostgreSQL. |
-| AspNetCore.HealthChecks.Redis | 9.0.0 | Health checks para Redis. |
-| OpenTelemetry.Extensions.Hosting | ver Common.csproj | Bootstrap OTel en host .NET. |
-| OpenTelemetry.Exporter.OpenTelemetryProtocol | ver Common.csproj | Exportacion OTLP (Grafana Tempo / OTEL collector). |
-| OpenTelemetry.Exporter.Prometheus.AspNetCore | ver Common.csproj | Exportacion de metricas para scraping Prometheus. |
-| OpenTelemetry.Instrumentation.AspNetCore | ver Common.csproj | Instrumentacion de requests ASP.NET Core. |
-| OpenTelemetry.Instrumentation.Http | ver Common.csproj | Instrumentacion de HttpClient. |
-| OpenTelemetry.Instrumentation.Runtime | ver Common.csproj | Metricas runtime (.NET GC, CPU, etc.). |
+| Submodulo de git | Productos de Raptor Dev Services | `git submodule add https://github.com/Raptor-Dev-Services/Common`, fijado a un tag. |
+| nuget.org | Cualquiera | Paquetes `Raptor.Common.*`, publicados desde el espejo [`Raptor057/ApiCommon`](https://github.com/Raptor057/ApiCommon). |
+
+En nuget.org hay un paquete por ensamblado con el mismo nombre y el prefijo `Raptor.`
+(`Raptor.Common.Contracts`, `Raptor.Common.Infra`...), y `Raptor.Common` es la facade. Cada version
+del paquete corresponde al tag de este repo con el mismo numero.
+
+```bash
+dotnet add package Raptor.Common            # todo
+dotnet add package Raptor.Common.Contracts  # solo lo que usa la capa Domain
+```
+
+## Dependencias
+
+Todas en version estable ([ADR-0007](docs/adr/0007-solo-dependencias-estables.md)). La fuente de verdad
+es cada `.csproj`; esta tabla dice para que esta cada una.
+
+| Paquete | Ensamblado | Proposito |
+|---|---|---|
+| Serilog | MultiTenancy, Infra | Logger estructurado. |
+| Serilog.Extensions.Logging | Infra | Puente de Serilog a `ILogger`. |
+| Serilog.Sinks.Console / Debug / Seq | Infra | Destinos de los logs. |
+| OpenTelemetry.Extensions.Hosting | Infra | Arranque de OpenTelemetry en el host. |
+| OpenTelemetry.Exporter.OpenTelemetryProtocol | Infra | Exportacion OTLP de trazas y metricas. |
+| OpenTelemetry.Instrumentation.AspNetCore / Http / Runtime | Infra | Instrumentacion de requests, `HttpClient` y runtime. |
+| Microsoft.Extensions.Http.Resilience | Infra | Resiliencia de llamadas HTTP salientes. |
+| AspNetCore.HealthChecks.NpgSql / Redis | Infra | Health checks de PostgreSQL y Redis. |
+| Dapper | Infra | Envoltorio de consultas con medicion de tiempo. |
+| Npgsql | Infra | Conexiones y migraciones de PostgreSQL. |
+| Microsoft.AspNetCore.App (framework) | MultiTenancy, Infra, Web | `HttpContext`, middlewares, opciones. |
+
+`Common.Contracts` y `Common.Messaging` no tienen dependencias externas.
 
 ## Arquitectura modular (v2.0.0)
 
@@ -94,7 +124,8 @@ Opcion monolito modular (referencia por capa) — ver "Referencias por capa" arr
 
 ```csharp
 builder.Services.AddLoggingServices(builder.Configuration);
-builder.Services.AddObservability(builder.Configuration);
+builder.Services.AddObservability(builder.Configuration, meterName: "MiWebApi");
+builder.Services.AddMediator(typeof(Program).Assembly);
 builder.Services.AddMultiTenancy(builder.Configuration);
 builder.Services.AddHttpClient("core").AddCoreResilience().AddTenantPropagation();
 ```
@@ -116,12 +147,14 @@ app.UseCoreProblemDetails();
     "SeqUri": "http://localhost:5341",
     "LogEventLevel": "Information",
     "Application": "MiWebApi",
-    "Version": "1.0.0"
+    "Version": "1.0.0",
+    "IncludeSqlText": false
   },
   "Observability": {
     "ServiceName": "MiWebApi",
     "ServiceVersion": "1.0.0",
-    "OtlpEndpoint": "http://localhost:4317"
+    "OtlpEndpoint": "http://localhost:4317",
+    "MetricsOtlpEndpoint": "http://localhost:9090/api/v1/otlp/v1/metrics"
   },
   "MultiTenancy": {
     "RequireTenant": true,
@@ -216,3 +249,10 @@ await tenantExecutionContextRunner.RunAsync("tenant-a", async ct =>
 - Serilog usa `CustomLogging:LogEventLevel` (por defecto Verbose); en `Development` fuerza al menos `Debug`.
 - El middleware de tenant agrega `tenant.id` al `Activity` actual y `TenantId` al scope de logs por request.
 - `RejectUnknownTenants=true` rechaza tenants no registrados cuando existe catalogo de tenants en configuracion.
+- `InteractorPipeline` registra cada peticion y respuesta con los campos sensibles tapados (`***`) por
+  nombre de propiedad: password, token, secret, apikey y compania
+  ([ADR-0006](docs/adr/0006-enmascarar-datos-sensibles-por-lista-negra.md)). La lista
+  `SensitiveDataMasker.Terminos` es publica pero de solo lectura: un termino nuevo se agrega aqui, en
+  `Common`. **Ojo:** los parametros que registra `DapperSqlDbConnectionBase` todavia no pasan por ese
+  enmascarado.
+- Sin `CustomLogging:LogEventLevel` el nivel es `Verbose`: fijalo siempre en produccion.
