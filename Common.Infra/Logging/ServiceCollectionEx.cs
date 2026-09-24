@@ -6,8 +6,33 @@ using Microsoft.Extensions.Logging;
 
 namespace Common.Logging
 {
+    /// <summary>
+    /// Registro del logging con Serilog.
+    /// </summary>
     public static class ServiceCollectionEx
     {
+        /// <summary>
+        /// Reemplaza los proveedores de log por Serilog, configurado desde la seccion <c>CustomLogging</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Nivel minimo: <c>CustomLogging:LogEventLevel</c> (nombre de nivel de Serilog, sin distinguir
+        /// mayusculas). Si falta o no es valido, Verbose. Si la variable de entorno
+        /// <c>ASPNETCORE_ENVIRONMENT</c> es Development, el nivel baja al menos a Debug.
+        /// </para>
+        /// <para>
+        /// Escribe a consola y a la salida de depuracion; a Seq solo si <c>CustomLogging:SeqUri</c> tiene valor.
+        /// Enriquece con el contexto de log, el tenant actual (<see cref="TenantLogEventEnricher"/>) y las
+        /// propiedades Project, Application y Version (de <c>CustomLogging</c>), MachineName y Environment.
+        /// </para>
+        /// <para>
+        /// El filtro de nivel de Microsoft.Extensions.Logging (seccion <c>Logging</c>) se sigue aplicando
+        /// antes de llegar a Serilog.
+        /// </para>
+        /// </remarks>
+        /// <param name="services">Coleccion de servicios.</param>
+        /// <param name="configuration">Configuracion de la que se lee <c>CustomLogging</c>.</param>
+        /// <returns>La misma coleccion, para encadenar.</returns>
         public static IServiceCollection AddLoggingServices(this IServiceCollection services, IConfiguration configuration)
         {
             return services

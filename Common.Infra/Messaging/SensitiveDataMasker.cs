@@ -23,17 +23,22 @@ namespace Common.Messaging
     ///
     /// LO QUE NO HACE, y hay que saberlo: esto es una lista NEGRA. Un campo sensible con un
     /// nombre que no este en la lista se registra en claro. La lista se amplia cuando aparece
-    /// un caso nuevo, y por eso `Terminos` es publica: un producto puede sumar los suyos.
+    /// un caso nuevo, y se amplia AQUI, en la libreria: `Terminos` es publica pero de solo
+    /// lectura, para consultarla; un producto no puede sumar los suyos en tiempo de ejecucion.
     /// La alternativa --lista blanca de lo que si se registra-- rompe el valor de depuracion
     /// que este log tiene hoy, y ese cambio merece su propia decision.
     /// </summary>
     public static class SensitiveDataMasker
     {
+        /// <summary>
+        /// Texto que sustituye a un valor sensible en el log: <c>"***"</c>.
+        /// </summary>
         public const string Tapado = "***";
 
         /// <summary>
         /// Fragmentos de nombre que marcan un valor como sensible. Coincidencia PARCIAL e
         /// insensible a mayusculas: "password" tapa tambien "NewPassword" y "PasswordHash".
+        /// Es de solo lectura: la lista se amplia cambiando la libreria.
         /// </summary>
         public static readonly IReadOnlyList<string> Terminos = new[]
         {
@@ -69,6 +74,13 @@ namespace Common.Messaging
             "type", "length", "count", "issuedat",
         };
 
+        /// <summary>
+        /// Indica si un nombre de propiedad, clave o parametro debe taparse: contiene alguno de
+        /// los <see cref="Terminos"/> (sin distinguir mayusculas) y no termina en un sufijo
+        /// descriptivo como <c>ExpiresAt</c>, <c>Type</c>, <c>Length</c> o <c>Count</c>.
+        /// </summary>
+        /// <param name="nombre">Nombre a evaluar.</param>
+        /// <returns><c>true</c> si el valor asociado a ese nombre no debe registrarse.</returns>
         public static bool EsSensible(string nombre)
         {
             if (SufijosDescriptivos.Any(s => nombre.EndsWith(s, StringComparison.OrdinalIgnoreCase)))
@@ -81,6 +93,15 @@ namespace Common.Messaging
         /// <see cref="Tapado"/> y el resto tal cual. Nunca lanza: un fallo aqui no debe
         /// tumbar la peticion que se estaba registrando.
         /// </summary>
+        /// <remarks>
+        /// Escalares, cadenas, fechas, <see cref="Guid"/> y enums se devuelven tal cual. Un
+        /// objeto se convierte en diccionario de sus propiedades publicas (mas <c>$type</c>); un
+        /// diccionario se tapa por clave; una coleccion se recorre elemento a elemento. Corta a
+        /// 50 elementos por coleccion y a 4 niveles de profundidad (por debajo solo pone el
+        /// nombre del tipo). Una propiedad que lanza al leerse sale como <c>"&lt;no legible&gt;"</c>.
+        /// </remarks>
+        /// <param name="valor">Objeto a preparar para el log.</param>
+        /// <returns>La vista enmascarada, o <c>null</c> si <paramref name="valor"/> es <c>null</c>.</returns>
         public static object? Enmascarar(object? valor) => Enmascarar(valor, 0);
 
         private static object? Enmascarar(object? valor, int profundidad)

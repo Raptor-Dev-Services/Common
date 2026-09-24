@@ -3,20 +3,61 @@ using Microsoft.Extensions.Options;
 
 namespace Common.MultiTenancy
 {
+    /// <summary>
+    /// Decide a que tenant pertenece una peticion HTTP.
+    /// </summary>
     public interface ITenantResolver
     {
+        /// <summary>
+        /// Resuelve el id del tenant de la peticion.
+        /// </summary>
+        /// <param name="context">Contexto HTTP de la peticion.</param>
+        /// <param name="cancellationToken">Token de cancelacion.</param>
+        /// <returns>El id del tenant, o <c>null</c> si no se pudo resolver.</returns>
         ValueTask<string?> ResolveTenantIdAsync(HttpContext context, CancellationToken cancellationToken = default);
     }
 
+    /// <summary>
+    /// <see cref="ITenantResolver"/> que prueba, en este orden: header, query string, subdominio
+    /// y tenant por defecto.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Orden: (1) header <see cref="MultiTenantOptions.TenantHeaderName"/> si
+    /// <see cref="MultiTenantOptions.ResolveFromHeader"/>; (2) query string
+    /// <see cref="MultiTenantOptions.TenantQueryStringKey"/> si
+    /// <see cref="MultiTenantOptions.ResolveFromQueryString"/>; (3) primer segmento del host si
+    /// <see cref="MultiTenantOptions.ResolveFromSubdomain"/>, el host tiene 3 o mas segmentos y ese
+    /// segmento no esta en <see cref="MultiTenantOptions.IgnoredSubdomains"/>; (4)
+    /// <see cref="MultiTenantOptions.DefaultTenantId"/>. Gana el primero con valor no vacio; header
+    /// y query se recortan de espacios. No comprueba que el tenant exista.
+    /// </para>
+    /// <para>
+    /// ADVERTENCIA: resolver el tenant desde un header o un query string que manda el cliente no
+    /// autentica nada; cualquiera puede pedir el tenant que quiera. Detras de autenticacion, el
+    /// tenant deberia salir de un claim verificado, no de estos valores.
+    /// </para>
+    /// </remarks>
     public sealed class DefaultTenantResolver : ITenantResolver
     {
         private readonly IOptions<MultiTenantOptions> _options;
 
+        /// <summary>
+        /// Crea el resolvedor.
+        /// </summary>
+        /// <param name="options">Opciones de multi-tenancy.</param>
         public DefaultTenantResolver(IOptions<MultiTenantOptions> options)
         {
             _options = options;
         }
 
+        /// <summary>
+        /// Resuelve el tenant con el orden header, query string, subdominio y tenant por defecto
+        /// (ver remarks de la clase).
+        /// </summary>
+        /// <param name="context">Contexto HTTP de la peticion.</param>
+        /// <param name="cancellationToken">No se usa.</param>
+        /// <returns>El id del tenant, o <see cref="MultiTenantOptions.DefaultTenantId"/> (que puede ser <c>null</c>).</returns>
         public ValueTask<string?> ResolveTenantIdAsync(HttpContext context, CancellationToken cancellationToken = default)
         {
             var options = _options.Value;

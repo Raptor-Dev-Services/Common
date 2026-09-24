@@ -8,12 +8,44 @@ using Npgsql;
 
 namespace Common.PostgreSql
 {
+    /// <summary>
+    /// Servicio de arranque que aplica los scripts SQL de esquema pendientes antes de que el host termine de arrancar.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Busca los <c>.sql</c> de la carpeta <see cref="SchemaMigrationOptions.ScriptsRelativePath"/>
+    /// (primero relativa al directorio de salida, despues al directorio actual), sin subcarpetas. Omite
+    /// los que empiezan con <c>000_template</c> y los aplica en orden alfabetico por ruta, sin distinguir
+    /// mayusculas (usar prefijos numericos con ceros: <c>010_</c> va antes que <c>2_</c>). Si la carpeta no
+    /// existe, registra un Warning y no hace nada.
+    /// </para>
+    /// <para>
+    /// Lleva el registro en <c>dbo.SchemaMigrations</c> (crea el esquema y la tabla si faltan). Cada
+    /// script pendiente se ejecuta en su propia transaccion junto con su registro; un script vacio se
+    /// salta sin registrarse.
+    /// </para>
+    /// <para>
+    /// Ante una <c>NpgsqlException</c> (directa o como excepcion interna) reintenta hasta 20 veces,
+    /// esperando 1 s, 2 s... hasta 5 s entre intentos, y en cada intento vuelve a leer lo ya aplicado.
+    /// Cualquier otro error, o el ultimo intento, se registra y se relanza: el host no arranca.
+    /// </para>
+    /// <para>
+    /// Usa el <see cref="IOpenDbConnectionFactory"/> registrado; si es por tenant actual, al arrancar no
+    /// hay tenant y falla.
+    /// </para>
+    /// </remarks>
     public sealed class SchemaMigrationHostedService : IHostedService
     {
         private readonly IOpenDbConnectionFactory _connectionFactory;
         private readonly ILogger<SchemaMigrationHostedService> _logger;
         private readonly SchemaMigrationOptions _options;
 
+        /// <summary>
+        /// Crea el servicio.
+        /// </summary>
+        /// <param name="connectionFactory">Fabrica de la conexion contra la que se migra.</param>
+        /// <param name="options">Opciones con la carpeta de scripts.</param>
+        /// <param name="logger">Logger del proceso de migracion.</param>
         public SchemaMigrationHostedService(
             IOpenDbConnectionFactory connectionFactory,
             IOptions<SchemaMigrationOptions> options,
@@ -24,6 +56,12 @@ namespace Common.PostgreSql
             _options = options.Value;
         }
 
+        /// <summary>
+        /// Aplica los scripts pendientes. Ver remarks de la clase.
+        /// </summary>
+        /// <param name="cancellationToken">Token de cancelacion del arranque.</param>
+        /// <returns>Tarea que termina cuando la migracion acaba.</returns>
+        /// <exception cref="Exception">Relanza el error del script o de conexion que hizo fallar la migracion.</exception>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             var scriptsDirectory = ResolveScriptsDirectory(_options.ScriptsRelativePath);
@@ -113,6 +151,11 @@ namespace Common.PostgreSql
             }
         }
 
+        /// <summary>
+        /// No hace nada.
+        /// </summary>
+        /// <param name="cancellationToken">No se usa.</param>
+        /// <returns>Una tarea completada.</returns>
         public Task StopAsync(CancellationToken cancellationToken)
             => Task.CompletedTask;
 

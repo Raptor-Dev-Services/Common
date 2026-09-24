@@ -8,12 +8,38 @@ using Microsoft.Extensions.Logging;
 
 namespace Common.Data
 {
+    /// <summary>
+    /// Implementacion de <see cref="IDapperSqlDbConnection"/> sobre Dapper que mide y registra cada ejecucion.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Cada llamada pide una conexion abierta a <see cref="IOpenDbConnectionFactory"/> y la cierra al
+    /// terminar: no hay conexion compartida ni transaccion entre llamadas.
+    /// </para>
+    /// <para>
+    /// Cada ejecucion se registra con nombre de la consulta, resultado (OK, SLOW o FAIL), milisegundos y
+    /// hash SHA-256 del texto SQL (o <c>NA</c> si esta vacio). Nivel: 300 ms o mas, Warning; 1000 ms o
+    /// mas, Error; 2000 ms o mas, Critical; por debajo de 300 ms, el nivel que pide la llamada. Un fallo
+    /// se registra como Error y la excepcion se relanza.
+    /// </para>
+    /// <para>
+    /// El texto SQL solo se incluye si <c>CustomLogging:IncludeSqlText</c> es <c>true</c>. Los
+    /// parametros siempre se registran, enmascarados con <see cref="SensitiveDataMasker"/>
+    /// (<c>DynamicParameters</c> incluido).
+    /// </para>
+    /// </remarks>
     public class DapperSqlDbConnectionBase : IDapperSqlDbConnection
     {
         private readonly IOpenDbConnectionFactory _connections;
         private readonly ILogger _logger;
         private readonly bool _includeSqlText;
 
+        /// <summary>
+        /// Crea la conexion leyendo <c>CustomLogging:IncludeSqlText</c> de la configuracion (por defecto <c>false</c>).
+        /// </summary>
+        /// <param name="connections">Fabrica de conexiones abiertas.</param>
+        /// <param name="logger">Logger donde se registra cada ejecucion.</param>
+        /// <param name="configuration">Configuracion de la que se lee <c>CustomLogging:IncludeSqlText</c>.</param>
         public DapperSqlDbConnectionBase(
             IOpenDbConnectionFactory connections,
             ILogger<DapperSqlDbConnectionBase> logger,
@@ -25,6 +51,12 @@ namespace Common.Data
         {
         }
 
+        /// <summary>
+        /// Crea la conexion indicando explicitamente si el texto SQL va al log.
+        /// </summary>
+        /// <param name="connections">Fabrica de conexiones abiertas.</param>
+        /// <param name="logger">Logger donde se registra cada ejecucion.</param>
+        /// <param name="includeSqlText">Si es <c>true</c>, el texto SQL se incluye en el log.</param>
         public DapperSqlDbConnectionBase(
             IOpenDbConnectionFactory connections,
             ILogger logger,
@@ -35,6 +67,15 @@ namespace Common.Data
             _includeSqlText = includeSqlText;
         }
 
+        /// <summary>
+        /// Ejecuta un comando (INSERT, UPDATE, DELETE, DDL) en una conexion propia.
+        /// </summary>
+        /// <param name="sql">Texto SQL. Los valores van en <paramref name="param"/>, nunca concatenados.</param>
+        /// <param name="param">Parametros de la consulta (objeto anonimo, diccionario o <c>DynamicParameters</c>).</param>
+        /// <param name="queryName">Nombre con el que se registra; si falta, el nombre del metodo.</param>
+        /// <param name="level">Nivel de log cuando la ejecucion tarda menos de 300 ms. Por defecto Debug.</param>
+        /// <param name="cancellationToken">Token de cancelacion.</param>
+        /// <returns>Numero de filas afectadas que reporta el proveedor.</returns>
         public Task<int> ExecuteAsync(
             string sql,
             object? param = null,
@@ -56,6 +97,16 @@ namespace Common.Data
                 level);
         }
 
+        /// <summary>
+        /// Ejecuta la consulta y devuelve la primera columna de la primera fila, en una conexion propia.
+        /// </summary>
+        /// <typeparam name="T">Tipo del valor.</typeparam>
+        /// <param name="sql">Texto SQL. Los valores van en <paramref name="param"/>, nunca concatenados.</param>
+        /// <param name="param">Parametros de la consulta (objeto anonimo, diccionario o <c>DynamicParameters</c>).</param>
+        /// <param name="queryName">Nombre con el que se registra; si falta, el nombre del metodo.</param>
+        /// <param name="level">Nivel de log cuando la ejecucion tarda menos de 300 ms. Por defecto Debug.</param>
+        /// <param name="cancellationToken">Token de cancelacion.</param>
+        /// <returns>El valor; <c>default</c> de <typeparamref name="T"/> si no hay filas o es NULL, aunque la firma no lo marque como anulable.</returns>
         public Task<T> ExecuteScalarAsync<T>(
             string sql,
             object? param = null,
@@ -78,6 +129,16 @@ namespace Common.Data
                 level);
         }
 
+        /// <summary>
+        /// Ejecuta la consulta y mapea todas las filas, en una conexion propia. El resultado ya esta cargado en memoria.
+        /// </summary>
+        /// <typeparam name="T">Tipo al que se mapea cada fila.</typeparam>
+        /// <param name="sql">Texto SQL. Los valores van en <paramref name="param"/>, nunca concatenados.</param>
+        /// <param name="param">Parametros de la consulta (objeto anonimo, diccionario o <c>DynamicParameters</c>).</param>
+        /// <param name="queryName">Nombre con el que se registra; si falta, el nombre del metodo.</param>
+        /// <param name="level">Nivel de log cuando la ejecucion tarda menos de 300 ms. Por defecto Debug.</param>
+        /// <param name="cancellationToken">Token de cancelacion.</param>
+        /// <returns>Las filas mapeadas; vacio si no hay.</returns>
         public Task<IEnumerable<T>> QueryAsync<T>(
             string sql,
             object? param = null,
@@ -99,6 +160,17 @@ namespace Common.Data
                 level);
         }
 
+        /// <summary>
+        /// Ejecuta la consulta y mapea la unica fila, en una conexion propia. Usa <c>QuerySingleOrDefaultAsync</c> de Dapper.
+        /// </summary>
+        /// <typeparam name="T">Tipo al que se mapea la fila.</typeparam>
+        /// <param name="sql">Texto SQL. Los valores van en <paramref name="param"/>, nunca concatenados.</param>
+        /// <param name="param">Parametros de la consulta (objeto anonimo, diccionario o <c>DynamicParameters</c>).</param>
+        /// <param name="queryName">Nombre con el que se registra; si falta, el nombre del metodo.</param>
+        /// <param name="level">Nivel de log cuando la ejecucion tarda menos de 300 ms. Por defecto Debug.</param>
+        /// <param name="cancellationToken">Token de cancelacion.</param>
+        /// <returns>La fila mapeada, o <c>default</c> si no hay filas.</returns>
+        /// <exception cref="InvalidOperationException">Si la consulta devuelve mas de una fila.</exception>
         public Task<T?> QuerySingleAsync<T>(
             string sql,
             object? param = null,
@@ -120,6 +192,16 @@ namespace Common.Data
                 level);
         }
 
+        /// <summary>
+        /// Ejecuta la consulta y mapea la primera fila, en una conexion propia. Usa <c>QueryFirstOrDefaultAsync</c> de Dapper.
+        /// </summary>
+        /// <typeparam name="T">Tipo al que se mapea la fila.</typeparam>
+        /// <param name="sql">Texto SQL. Los valores van en <paramref name="param"/>, nunca concatenados.</param>
+        /// <param name="param">Parametros de la consulta (objeto anonimo, diccionario o <c>DynamicParameters</c>).</param>
+        /// <param name="queryName">Nombre con el que se registra; si falta, el nombre del metodo.</param>
+        /// <param name="level">Nivel de log cuando la ejecucion tarda menos de 300 ms. Por defecto Debug.</param>
+        /// <param name="cancellationToken">Token de cancelacion.</param>
+        /// <returns>La primera fila mapeada, o <c>default</c> si no hay filas.</returns>
         public Task<T?> QueryFirstAsync<T>(
             string sql,
             object? param = null,

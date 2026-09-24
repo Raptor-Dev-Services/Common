@@ -7,8 +7,36 @@ using OpenTelemetry.Trace;
 
 namespace Common.Observability
 {
+    /// <summary>
+    /// Registro de OpenTelemetry (trazas y metricas).
+    /// </summary>
     public static class ServiceCollectionEx
     {
+        /// <summary>
+        /// Registra trazas y metricas de OpenTelemetry con exportacion OTLP, configuradas desde la seccion
+        /// <c>Observability</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Recurso: <c>ServiceName</c> (por defecto <c>"UnknownService"</c>), <c>ServiceVersion</c>, y los
+        /// atributos deployment.environment (variable <c>ASPNETCORE_ENVIRONMENT</c>), host.name y
+        /// service.instance.id (id del proceso).
+        /// </para>
+        /// <para>
+        /// Trazas: ASP.NET Core y HttpClient, exportadas a <c>OtlpEndpoint</c> con el protocolo por defecto
+        /// del exportador. Metricas: el medidor <paramref name="meterName"/>, ASP.NET Core, HttpClient y
+        /// runtime. Si hay <c>MetricsOtlpEndpoint</c>, las metricas van ahi por HTTP/protobuf; si no, a
+        /// <c>OtlpEndpoint</c> con el protocolo por defecto.
+        /// </para>
+        /// <para>
+        /// Sin endpoints no se exporta nada y no falla: la instrumentacion sigue activa.
+        /// </para>
+        /// </remarks>
+        /// <param name="services">Coleccion de servicios.</param>
+        /// <param name="configuration">Configuracion de la que se lee <c>Observability</c>.</param>
+        /// <param name="meterName">Nombre del <see cref="System.Diagnostics.Metrics.Meter"/> propio de la aplicacion.</param>
+        /// <returns>La misma coleccion, para encadenar.</returns>
+        /// <exception cref="UriFormatException">Al construir los exportadores, si un endpoint configurado no es una URI valida.</exception>
         public static IServiceCollection AddObservability(
             this IServiceCollection services,
             IConfiguration configuration,
