@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Common.Infra/Common.Infra.csproj" />
+    <ProjectReference Include="../Common.Web/Common.Web.csproj" />
   </ItemGroup>
 
 </Project>
