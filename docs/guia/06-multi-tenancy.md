@@ -66,7 +66,7 @@ En este orden, se queda con el primero que no este vacio:
 
 1. El header `TenantHeaderName`, si `ResolveFromHeader`.
 2. El query string `TenantQueryStringKey`, si `ResolveFromQueryString`.
-3. El subdominio, si `ResolveFromSubdomain`: el primer segmento de un host de 3 o mas segmentos
+3. El subdominio, si `ResolveFromSubdomain`: el primer segmento de un host (un nombre, no una IP) de 3 o mas segmentos
    (`acme.midominio.com` -> `acme`) que no este en `IgnoredSubdomains`.
 4. `DefaultTenantId`.
 
@@ -142,9 +142,8 @@ public sealed class CierreDiario(ITenantExecutionContextRunner runner, IServicio
 Dentro de `RunAsync`, `ITenantContextAccessor`, los logs (`TenantId`) y la traza (`tenant.id`) ven el
 tenant como si fuera una peticion. Hay una sobrecarga `RunAsync<T>` que devuelve valor.
 
-**Llamalo solo desde un flujo sin tenant** (un job, un consumidor, un `BackgroundService`). Si lo
-llamas desde algo que ya tiene tenant, como una peticion HTTP, **esa peticion pierde su tenant** al
-volver de `RunAsync` (ver problemas conocidos al final).
+Se puede llamar desde un flujo que ya tiene tenant (por ejemplo, una peticion que hace algo a nombre
+de otro tenant): dentro de `RunAsync` se ve el tenant pedido, y al volver el flujo conserva el suyo.
 
 ## Propagar el tenant a otros servicios
 
@@ -161,18 +160,14 @@ cualquier valor previo. Si no hay tenant, no manda nada.
 - `ITenantConfigurationStore.TryGetTenant(id, out var opciones)`: la entrada del catalogo (`IsEnabled`,
   `Settings`, `ConnectionStrings`).
 - `ITenantConnectionStringResolver.GetRequiredConnectionString(id, "Default")`: la cadena del tenant.
-  **Si el tenant no la tiene, devuelve la cadena global** `ConnectionStrings:Default`, y solo lanza si
-  tampoco existe esa (ver problemas conocidos).
+  **Solo la del propio tenant**: si no la tiene, o no esta en el catalogo, lanza. Nunca usa
+  `ConnectionStrings` global, para que un tenant mal configurado no acabe en la base de otro.
 - Fabricas de conexion por tenant: [08 - Datos](08-datos-y-migraciones.md#una-base-por-tenant).
 
-## Problemas conocidos
+## A tener en cuenta
 
-Comprobados en la version actual; estan registrados en el [SRS](../srs.md) como requisitos que no se
-cumplen. Mientras se corrigen, esto es lo que hay que saber:
-
-| Problema | Consecuencia | Como evitarlo |
-|---|---|---|
-| Un tenant sin cadena propia, **o que no esta en el catalogo**, recibe la cadena global `ConnectionStrings:{nombre}` | Un tenant mal configurado lee y escribe en la base compartida, no en la suya | Si usas una base por tenant, **no definas** la cadena global con el mismo nombre: asi un tenant sin cadena falla en vez de caer a otra base. Y manten `RejectUnknownTenants` con catalogo. |
-| `RejectUnknownTenants` solo rechaza si hay catalogo (`Tenants` no vacio) | Sin catalogo, cualquier tenant pasa | Define el catalogo, o valida el tenant tu mismo |
-| Un host que es una IP (`192.168.1.10`) resuelve el tenant `"192"` con `ResolveFromSubdomain` | Llamadas por IP (health checks internos, pruebas) entran con un tenant inventado | Apaga `ResolveFromSubdomain` si no lo usas, o manten catalogo con `RejectUnknownTenants` para que se rechace |
-| `RunAsync` dentro de un flujo que ya tiene tenant le borra el tenant al volver | Despues de la llamada, la peticion sigue sin tenant | Llama `RunAsync` solo desde flujos sin tenant |
+- `RejectUnknownTenants` solo rechaza si hay catalogo (`Tenants` no vacio). Sin catalogo, cualquier
+  tenant pasa: define el catalogo, o valida el tenant tu mismo.
+- Si tus tenants comparten una sola base (con una columna de tenant), no uses el resolvedor de
+  cadenas por tenant: usa una fabrica fija ([guia 08](08-datos-y-migraciones.md#una-base-cadena-en-configuracion))
+  y filtra por tenant en tus consultas.

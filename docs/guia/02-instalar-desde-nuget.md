@@ -11,20 +11,20 @@
 | `Raptor.Common.Infra` | `Common.Infra` | Contracts, Messaging, MultiTenancy, Serilog, OpenTelemetry, Dapper, Npgsql |
 | `Raptor.Common.Web` | `Common.Web` | Contracts, MultiTenancy, ASP.NET Core |
 
-La version de los paquetes es la del tag del repositorio: `Raptor.Common 2.1.2` es el codigo del
-tag `v2.1.2`.
+La version de los paquetes es la del tag del repositorio: `Raptor.Common 2.1.3` es el codigo del
+tag `v2.1.3`.
 
 ## Instalar todo
 
 Para una API sin capas separadas:
 
 ```bash
-dotnet add package Raptor.Common --version 2.1.2
+dotnet add package Raptor.Common --version 2.1.3
 ```
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="Raptor.Common" Version="2.1.2" />
+  <PackageReference Include="Raptor.Common" Version="2.1.3" />
 </ItemGroup>
 ```
 
@@ -50,9 +50,9 @@ Fija todos los `Raptor.Common.*` a la **misma** version:
 ```xml
 <!-- Directory.Packages.props -->
 <ItemGroup>
-  <PackageVersion Include="Raptor.Common.Contracts" Version="2.1.2" />
-  <PackageVersion Include="Raptor.Common.Messaging" Version="2.1.2" />
-  <PackageVersion Include="Raptor.Common.Web" Version="2.1.2" />
+  <PackageVersion Include="Raptor.Common.Contracts" Version="2.1.3" />
+  <PackageVersion Include="Raptor.Common.Messaging" Version="2.1.3" />
+  <PackageVersion Include="Raptor.Common.Web" Version="2.1.3" />
 </ItemGroup>
 ```
 

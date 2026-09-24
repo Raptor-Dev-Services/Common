@@ -57,9 +57,9 @@ Las cadenas salen del catalogo `MultiTenancy:Tenants:{id}:ConnectionStrings` ([g
 `CurrentTenant...` lanza si la ejecucion no tiene tenant: es lo correcto, porque sin tenant no hay a
 que base ir.
 
-> **Cuidado:** si el tenant no tiene la cadena pedida, el resolvedor devuelve la global
-> `ConnectionStrings:Default`. Con una base por tenant, **no definas esa cadena global**: sin ella, un
-> tenant mal configurado falla con un error claro en lugar de trabajar sobre la base de otro.
+Si el tenant no tiene la cadena pedida, abrir la conexion **falla**: nunca se usa la global
+`ConnectionStrings:Default`. Asi un tenant mal configurado da un error claro en lugar de trabajar
+sobre la base de otro.
 
 ## `DapperSqlDbConnectionBase`
 
@@ -149,11 +149,9 @@ Como funciona:
    con `000_template`.
 3. Cada script que no este registrado se ejecuta **en su propia transaccion**, junto con su registro.
    Si falla, se revierte y **la aplicacion no arranca**.
-4. Si la base aun no responde (arranque en contenedores), reintenta hasta 20 veces con espera creciente.
-   **Problema conocido:** tambien reintenta los errores del propio SQL (un error de sintaxis es una
-   `PostgresException`, que hereda de `NpgsqlException`). Un script roto tarda unos 85 segundos en
-   tumbar el arranque, con 19 avisos de "la base aun no esta lista" que no son ciertos: busca el
-   error real en la excepcion de cada aviso.
+4. Si la base aun no responde (arranque en contenedores), reintenta hasta 20 veces con espera
+   creciente. Solo reintenta lo transitorio: errores de red, timeouts, la base arrancando o sin
+   conexiones libres. Un error del propio script (sintaxis, tabla que no existe) falla a la primera.
 5. La migracion usa el `IOpenDbConnectionFactory` registrado. Si ese es uno "por tenant actual",
    al arrancar no hay tenant y falla: registra una fabrica fija para la base que se migra.
 

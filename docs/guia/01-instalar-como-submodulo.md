@@ -10,10 +10,10 @@ Desde la raiz de tu repo:
 ```bash
 git submodule add https://github.com/Raptor-Dev-Services/Common Common
 cd Common
-git checkout v2.1.2          # un tag, nunca una rama
+git checkout v2.1.3          # un tag, nunca una rama
 cd ..
 git add .gitmodules Common
-git commit -m "chore: agrega Common v2.1.2 como submodulo"
+git commit -m "chore: agrega Common v2.1.3 como submodulo"
 ```
 
 Lo que se commitea no es el codigo de `Common`: es un **puntero a un commit**. Quien clone tu repo
@@ -130,10 +130,10 @@ En CI, el checkout tiene que traer submodulos. En GitHub Actions:
 ```bash
 cd Common
 git fetch --tags
-git checkout v2.1.3          # la version nueva
+git checkout v2.2.0          # la version nueva
 cd ..
 git add Common
-git commit -m "chore: sube Common a v2.1.3"
+git commit -m "chore: sube Common a v2.2.0"
 ```
 
 Antes de subir, lee en el [`CHANGELOG`](../../CHANGELOG.md) si la version nueva trae pasos de

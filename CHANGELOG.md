@@ -6,6 +6,32 @@ Cambios de cada version, con lo que hay que hacer para subir. Sigue
 La version es la del tag de git (`vX.Y.Z`) y la del paquete `Raptor.Common.*` en nuget.org: el
 mismo numero es el mismo codigo.
 
+## [2.1.3] - 2026-09-24
+
+Corrige los cuatro problemas conocidos de la 2.1.2.
+
+### Seguridad
+- **Un tenant ya no recibe la base de otro.** `ITenantConnectionStringResolver` devolvia la cadena
+  global `ConnectionStrings:{nombre}` cuando el tenant no tenia la suya o no estaba en el catalogo: un
+  tenant mal configurado trabajaba sobre la base compartida o ajena sin ningun error. Ahora devuelve
+  solo la cadena del propio tenant, y si no existe, falla.
+- **Un host que es una IP ya no resuelve tenant.** Con `ResolveFromSubdomain` (activo por defecto),
+  `192.168.1.10` resolvia el tenant `"192"`.
+
+### Corregido
+- `ITenantExecutionContextRunner.RunAsync` ya no deja sin tenant al flujo que lo llama. El setter de
+  `TenantContextAccessor.Current` vaciaba el contenedor que compartia con ese flujo.
+- Las migraciones reintentan solo lo transitorio (`NpgsqlException.IsTransient`). Un error del script
+  fallaba tras unos 85 s de reintentos; ahora falla a la primera.
+
+### Migracion desde 2.1.2
+- **Si usas una base por tenant**, revisa que cada tenant del catalogo tenga su cadena en
+  `MultiTenancy:Tenants:{id}:ConnectionStrings`. Uno que dependia sin saberlo de la cadena global
+  ahora falla al abrir la conexion: es el comportamiento buscado.
+- **Si todos tus tenants comparten una sola base**, no uses `ITenantConnectionStringResolver` ni las
+  fabricas por tenant: usa una fabrica fija (`ConfigurationNpgsqlConnectionFactory<T>`).
+- Si llamabas a la API por IP esperando un tenant del primer octeto (no deberia), ahora no se resuelve.
+
 ## [2.1.2] - 2026-09-24
 
 ### Corregido
@@ -31,9 +57,7 @@ mismo numero es el mismo codigo.
 Nada que cambiar. Si tenias un `catch (TargetInvocationException)` para esquivar el primer defecto,
 ya no hace falta.
 
-### Problemas conocidos (sin corregir en esta version)
-Comprobados y registrados en el SRS como requisitos que no se cumplen. Como evitarlos esta en las
-guias 06 y 08.
+### Problemas conocidos (corregidos en la 2.1.3)
 - Un tenant sin cadena de conexion propia, o fuera del catalogo, recibe la cadena global
   (REQ-SEC-006).
 - Un host que es una IP resuelve un tenant con la resolucion por subdominio (REQ-SEC-007).

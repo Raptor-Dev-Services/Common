@@ -1,7 +1,7 @@
 # Especificacion de Requisitos de Software (SRS)
 ## Para Common - libreria base para WebApi .NET
 
-Version 1.2 del documento, para `Common` v2.1.2
+Version 1.3 del documento, para `Common` v2.1.3
 Preparado por Rogelio Arriaga
 Raptor Dev Services
 2026-09-24
@@ -43,6 +43,7 @@ Raptor Dev Services
 | Rogelio Arriaga | 2026-09-24 | Primera version: requisitos extraidos del codigo de `aedf830` y de los ADR 0001-0008. | 1.0 |
 | Rogelio Arriaga | 2026-09-24 | REQ-SEC-004 y REQ-COMP-001 pasan a cumplirse (v2.1.1); REQ-SEC-001 cubre diccionarios. | 1.1 |
 | Rogelio Arriaga | 2026-09-24 | v2.1.2: REQ-FUNC-003, 008, 012 y 013 con prueba; nuevos REQ-SEC-005 a 007 y REQ-MAINT-003; REQ-FUNC-009, REQ-FUNC-011 y REQ-REL-002 marcados como no cumplidos tras comprobarlo. | 1.2 |
+| Rogelio Arriaga | 2026-09-24 | v2.1.3: los cuatro "no cumple" (REQ-FUNC-009, REQ-FUNC-011/REQ-SEC-006, REQ-SEC-007, REQ-REL-002) pasan a cumplirse, con prueba. | 1.3 |
 
 ## 1. Introduccion
 
@@ -274,7 +275,8 @@ No aplica.
 - Titulo: Resolucion del tenant
 - Enunciado: El tenant de un request debe resolverse en este orden, tomando el primero no vacio:
   cabecera (si `ResolveFromHeader`), query string (si `ResolveFromQueryString`), subdominio (si
-  `ResolveFromSubdomain`, el host tiene 3 o mas segmentos y el primero no esta en `IgnoredSubdomains`)
+  `ResolveFromSubdomain`, el host es un nombre y no una IP, tiene 3 o mas segmentos y el primero no
+  esta en `IgnoredSubdomains`)
   y por ultimo `DefaultTenantId`.
 - Criterios de aceptacion: `AddMultiTenancy` falla al arrancar si `RequireTenant` esta activo y no hay
   ninguna estrategia de resolucion.
@@ -295,8 +297,8 @@ No aplica.
 - Enunciado: `ITenantExecutionContextRunner.RunAsync` debe ejecutar trabajo (jobs, consumidores) con
   un tenant fijado, de modo que logs, trazas y fabricas de conexion lo vean como si fuera un request.
   Al volver, el flujo que lo llamo debe conservar el tenant que tenia.
-- Verificacion: Prueba. **Estado: no se cumple**: llamado desde un flujo con tenant, ese flujo queda
-  sin tenant al volver (comprobado el 2026-09-24).
+- Verificacion: Prueba. Cumple desde la v2.1.3; hasta la v2.1.2, el flujo que llamaba quedaba sin
+  tenant al volver.
 
 - ID: REQ-FUNC-010
 - Titulo: Propagacion del tenant
@@ -308,8 +310,8 @@ No aplica.
 - Titulo: Cadena de conexion por tenant
 - Enunciado: `ITenantConnectionStringResolver` debe devolver la cadena de conexion nombrada del
   tenant desde el catalogo de configuracion, y `GetRequiredConnectionString` debe lanzar si no existe.
-- Verificacion: Prueba. **Estado: no se cumple**: si el tenant no tiene la cadena, o no esta en el
-  catalogo, devuelve la global `ConnectionStrings:{nombre}` en vez de lanzar (ver REQ-SEC-006).
+- Verificacion: Prueba. Cumple desde la v2.1.3; hasta la v2.1.2 devolvia la cadena global en vez de
+  lanzar (ver REQ-SEC-006).
 
 #### Web
 
@@ -438,14 +440,13 @@ No aplica.
   catalogo, la resolucion debe fallar; no debe devolver la cadena global.
 - Razon: con una base por tenant, la cadena global es la de otro (o la compartida). Un tenant mal
   configurado trabajaria sobre datos ajenos sin ningun error.
-- Verificacion: Prueba. **Estado: no se cumple** (comprobado el 2026-09-24). Mitigacion documentada
-  en la guia 06: no definir la cadena global cuando hay una base por tenant.
+- Verificacion: Prueba. Cumple desde la v2.1.3.
 
 - ID: REQ-SEC-007
 - Titulo: Un host que no es un nombre no resuelve tenant
 - Enunciado: La resolucion por subdominio no debe tomar un tenant de un host que es una direccion IP.
-- Razon: con la configuracion por defecto, `192.168.1.10` resuelve el tenant `"192"`.
-- Verificacion: Prueba. **Estado: no se cumple** (comprobado el 2026-09-24).
+- Razon: hasta la v2.1.2, con la configuracion por defecto, `192.168.1.10` resolvia el tenant `"192"`.
+- Verificacion: Prueba. Cumple desde la v2.1.3.
 
 #### 3.3.3 Confiabilidad
 
@@ -460,8 +461,9 @@ No aplica.
 - Enunciado: Ante un error de conectividad de Npgsql, las migraciones deben reintentar hasta 20 veces
   con espera creciente (1 s por intento, maximo 5 s) antes de fallar. Un error del propio SQL debe
   fallar a la primera.
-- Verificacion: Inspeccion. **Estado: no se cumple en la segunda parte**: `PostgresException` hereda de
-  `NpgsqlException`, asi que un error de sintaxis tambien se reintenta (unos 85 s antes de fallar).
+- Verificacion: Prueba. Cumple desde la v2.1.3, que reintenta solo lo que Npgsql marca como
+  transitorio (`NpgsqlException.IsTransient`); hasta la v2.1.2 un error de sintaxis se reintentaba
+  unos 85 s.
 
 - ID: REQ-REL-003
 - Titulo: La telemetria es opcional
@@ -632,8 +634,8 @@ No aplica: `Common` no incorpora modelos de aprendizaje automatico.
 
 ## 4. Verificacion
 
-Estado medido el 2026-09-24 sobre la v2.1.2: `dotnet build Common.slnx -c Release` con **0 warnings
-y 0 errores** (con CS1591 activo), `dotnet test` con **29 de 29** pruebas en verde, y la puerta de
+Estado medido el 2026-09-24 sobre la v2.1.3: `dotnet build Common.slnx -c Release` con **0 warnings
+y 0 errores** (con CS1591 activo), `dotnet test` con **44 de 44** pruebas en verde, y la puerta de
 dependencias en **verde**. Cada arreglo con prueba se valido quitandolo: su prueba cae.
 
 Ademas, la guia de uso se ejercito con dos APIs de prueba desechables, una con los paquetes de
@@ -655,19 +657,19 @@ ejecutaron contra una base.
 | REQ-FUNC-012, REQ-SEC-005 | Prueba | `Common.Tests/MediatorExceptionTests.cs` (`CorrelationIdTests`) | Cumple desde v2.1.2 |
 | REQ-FUNC-013 | Prueba | `MediatorExceptionTests.cs` (`ProblemDetailsContentTypeTests`) | Cumple desde v2.1.2 |
 | REQ-MAINT-003 | Prueba | `dotnet build` con CS1591 | Cumple desde v2.1.2 |
-| REQ-FUNC-009 | Prueba | - | **No cumple**: el flujo que llama pierde su tenant |
-| REQ-FUNC-011, REQ-SEC-006 | Prueba | - | **No cumple**: cae a la cadena global |
-| REQ-SEC-007 | Prueba | - | **No cumple**: una IP resuelve tenant |
-| REQ-REL-002 | Inspeccion | - | **No cumple** en la segunda parte: reintenta errores de SQL |
-| REQ-FUNC-004 a 007, 010, 015, 017 | Prueba | - | Sin prueba automatizada |
+| REQ-FUNC-009 | Prueba | `Common.Tests/TenancyAndMigrationFixesTests.cs` | Cumple desde v2.1.3 |
+| REQ-FUNC-011, REQ-SEC-006 | Prueba | `TenancyAndMigrationFixesTests.cs` | Cumple desde v2.1.3 |
+| REQ-FUNC-007 (IP), REQ-SEC-007 | Prueba | `TenancyAndMigrationFixesTests.cs` | Cumple desde v2.1.3 |
+| REQ-REL-002 | Prueba | `TenancyAndMigrationFixesTests.cs` | Cumple desde v2.1.3 (el reintento en si, sin prueba) |
+| REQ-FUNC-004 a 006, 007 (orden), 010, 015, 017 | Prueba | - | Sin prueba automatizada |
 | REQ-OBS-004 | Prueba | - | Sin prueba automatizada |
 | REQ-INT-*, REQ-FUNC-001, 002, 014, 016, 018 a 020 | Inspeccion | codigo fuente | Cumple por inspeccion |
 | REQ-OBS-001, 003, REQ-INT-004, REQ-INST-001, REQ-PORT-001 | Demostracion | un consumidor corriendo | Cumple en los consumidores; sin prueba en la libreria |
 | REQ-PERF-001 | Analisis | - | Pendiente |
 
-**Lo mas urgente son los cuatro "no cumple"**, y de ellos REQ-SEC-006: es el unico que puede mezclar
-datos entre tenants sin dar ningun error. Despues, la brecha de pruebas: la multi-tenencia, el
-registro del mediator y las migraciones solo se prueban a traves de los consumidores.
+**No queda ningun requisito sin cumplir.** Lo pendiente es la brecha de pruebas: el orden de
+resolucion del tenant, la propagacion, el registro del mediator y la ejecucion real de las
+migraciones solo se prueban a traves de los consumidores.
 
 ## 5. Apendices
 

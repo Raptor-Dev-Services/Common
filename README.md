@@ -15,14 +15,14 @@ Dos caminos, con el mismo codigo. Elige uno y **no los mezcles** en una misma so
 **Paquete NuGet**, lo mas simple:
 
 ```bash
-dotnet add package Raptor.Common --version 2.1.2
+dotnet add package Raptor.Common --version 2.1.3
 ```
 
 **Submodulo de git**, si quieres el codigo dentro de tu repo para leerlo y depurarlo:
 
 ```bash
 git submodule add https://github.com/Raptor-Dev-Services/Common Common
-git -C Common checkout v2.1.2
+git -C Common checkout v2.1.3
 ```
 
 ```xml

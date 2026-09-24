@@ -55,20 +55,23 @@ Un ADR aceptado no se edita: si la decision cambia, se escribe otro que lo reemp
 1. En el `CHANGELOG`, cambia "sin publicar" por la version y la fecha.
 2. Commit, y tag anotado:
    ```bash
-   git tag -a v2.1.2 -m "v2.1.2: <resumen>"
-   git push origin main v2.1.2
+   git tag -a v2.1.3 -m "v2.1.3: <resumen>"
+   git push origin main v2.1.3
    ```
 3. **Espejo NuGet.** El paquete `Raptor.Common.*` se publica desde el repositorio espejo
    [`Raptor057/ApiCommon`](https://github.com/Raptor057/ApiCommon), que es copia 1:1 de este:
    ```bash
    cd ../ApiCommon
-   git -C ../Common archive v2.1.2 | tar -x -C .   # copia encima
-   # borra lo que se haya borrado en Common desde la version anterior
-   echo 2.1.2 > version
-   # agrega la entrada al CHANGELOG del espejo
-   git add -A && git commit -m "feat: sincroniza con Common v2.1.2"
-   git tag -a v2.1.2 -m "v2.1.2 - espejo de Common v2.1.2"
-   git push origin main v2.1.2                     # el tag dispara la publicacion
+   # 1) archivos nuevos en Common: ¿alguno se llama igual que uno propio del espejo?
+   git -C ../Common diff --name-only --diff-filter=A v2.1.2 v2.1.3
+   # 2) archivos borrados en Common: se borran tambien aqui
+   git -C ../Common diff --name-only --diff-filter=D v2.1.2 v2.1.3
+   git -C ../Common archive v2.1.3 | tar -x -C .   # copia encima
+   echo 2.1.3 > version
+   # agrega la entrada a CHANGELOG-NUGET.md (el CHANGELOG.md llega de aqui)
+   git add -A && git commit -m "feat: sincroniza con Common v2.1.3"
+   git tag -a v2.1.3 -m "v2.1.3 - espejo de Common v2.1.3"
+   git push origin main v2.1.3                     # el tag dispara la publicacion
    ```
    Antes de empujar el tag, comprueba que cada archivo de Common coincide con el del espejo (el
    procedimiento completo y por que es asi estan en `docs/adr-nuget/` del espejo). La publicacion usa
