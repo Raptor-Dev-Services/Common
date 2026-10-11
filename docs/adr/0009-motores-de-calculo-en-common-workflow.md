@@ -1,7 +1,7 @@
 # ADR-0009 - Motores de calculo de negocio genericos en un ensamblado nuevo, `Common.Workflow`
 
 **Fecha:** 2026-10-11
-**Estado:** Propuesto
+**Estado:** Aceptado
 **Proyecto:** Common
 **Origen:** plan de adopcion de GLPI, repo `Raptor-Dev-Services/glpi-ideas` (`00-PLAN-MAESTRO.md` §2 y
 §10.1; SRS `SRS-CMN-C01` a `C07` en `02-comun/`). Aprobado por el dueno el 2026-10-11. **Amplia** el

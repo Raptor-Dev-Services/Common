@@ -14,6 +14,17 @@ mismo numero es el mismo codigo.
   `Common.Contracts`, no lee el reloj y **no entra a la facade**: se referencia explicito.
   - `DefinitionError` / `DefinitionFailure<T>`: una definicion invalida devuelve todos sus errores
     como `IValidationFailure`, con codigos estables.
+  - `Calendars`: `BusinessCalendar` (horas y dias habiles, feriados, cambio de horario) y
+    `ServiceClock` (vencimientos con pausa y escalamiento).
+  - `States`: `StateMachine<TState,TContext>` con matriz por rol que deniega por omision, motivo,
+    guardas, ganchos con veto y actividad `workflow.transition`.
+  - `Rules`: `RuleCollection` con criterios AND/OR, capturas regex `#n`, orden, stop y modo `Explain`.
+  - `Alerts`: `AlertEvaluator` (umbral, fin, preaviso, periodicidad), `IAlertLedger` +
+    `InMemoryAlertLedger` y fechas de contrato (`ContractSchedule`).
+  - `Folios`: formato `T-000123` por ambito, `IFolioGenerator` + `InMemoryFolioGenerator`.
+  - `Forms`: `FormConditionEngine` (visibilidad por punto fijo, validacion, destinos).
+  - `Depreciation`: lineal y decreciente, valor en libros, garantia y TCO. **Las tasas fiscales las pone
+    el consumidor**; los vectores de prueba con tasas LISR aun no los revisa un contador.
 
 ### Migracion
 - Nada que hacer si no lo usas. Para usarlo, agrega un `ProjectReference` a

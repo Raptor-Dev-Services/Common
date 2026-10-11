@@ -20,6 +20,7 @@ cada capacidad por separado.
 | [07 - Logging y observabilidad](07-logging-y-observabilidad.md) | Serilog y Seq, enmascarado de secretos, correlacion, trazas y metricas por OTLP. |
 | [08 - Datos y migraciones](08-datos-y-migraciones.md) | Fabricas de conexion, envoltorio Dapper medido, migraciones SQL al arranque. |
 | [09 - HTTP, salud y opciones](09-http-salud-y-opciones.md) | Resiliencia de `HttpClient`, health checks, opciones validadas al arrancar. |
+| [10 - Motores de calculo](10-workflow.md) | `Common.Workflow`: calendario habil, estados, reglas, alertas, folios, formularios y depreciacion. |
 
 ## Submodulo o NuGet: ¿es lo mismo?
 

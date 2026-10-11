@@ -1,6 +1,6 @@
 # Estado de Common - para continuar en otra maquina
 
-**Cerrado el:** 2026-09-24.
+**Cerrado el:** 2026-10-11.
 
 Este documento es el **estado actual y se sobrescribe** en cada cierre. La historia vive en los
 mensajes de commit y en [`CHANGELOG.md`](CHANGELOG.md); el uso de la libreria, en
@@ -10,40 +10,47 @@ mensajes de commit y en [`CHANGELOG.md`](CHANGELOG.md); el uso de la libreria, e
 
 ## Donde quedo
 
-- Rama `main` en `dace97a`, empujada, arbol limpio, sin otras ramas. Ultimo tag: **`v2.1.3`**.
-- El espejo publico [`Raptor057/ApiCommon`](https://github.com/Raptor057/ApiCommon) esta sincronizado
-  con `v2.1.3`, y los seis paquetes `Raptor.Common.*` **2.1.3** estan publicados e indexados en nuget.org.
-- **Consumidores por submodulo ya en `v2.1.3`:** `back-template`, `cmsa`, `hospital-core` y
-  `zeit-webapi`, cada uno con sus puertas medidas al subir.
+- Rama `main`, empujada, arbol limpio. Ultimo tag: **`v2.1.3`**. En `main` hay trabajo **sin publicar**:
+  el ensamblado nuevo **`Common.Workflow`** ([ADR-0009](docs/adr/0009-motores-de-calculo-en-common-workflow.md)),
+  con los siete motores C01-C07 de la adopcion de GLPI (calendario habil, maquina de estados, motor de
+  reglas, alertas, folios, condiciones de formulario y depreciacion). Esta en la seccion "sin publicar"
+  del `CHANGELOG` y esta pensado como **2.2.0** (menor: solo agrega).
+- Los seis paquetes `Raptor.Common.*` **2.1.3** siguen siendo lo publicado; el espejo `ApiCommon` no
+  tiene aun `Common.Workflow`.
+- **Consumidores por submodulo en `v2.1.3`:** `back-template`, `cmsa`, `hospital-core` y `zeit-webapi`.
 
 ## Puertas al cerrar
 
 `dotnet build Common.slnx -c Release` **0 warnings, 0 errores** (con CS1591 activo),
-`dotnet test` **44 de 44**, `python scripts/check-prerelease-deps.py` **verde**.
+`dotnet test` **44 de 44** (Common.Tests) y **721 de 721** (Common.Workflow.Tests, 10 corridas seguidas
+en verde), `python scripts/check-prerelease-deps.py` **verde**.
 
-Este repo **no tiene CI**: esas tres puertas se corren en local antes de cada tag. El CI del espejo
-corre las mismas en cada push y antes de publicar.
+Este repo **no tiene CI**: esas puertas se corren en local antes de cada tag. En el servidor de
+staging no hay SDK de .NET instalado: se corrieron con la imagen `mcr.microsoft.com/dotnet/sdk:10.0`
+(`docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp -v "$PWD":/src -w /src ...`).
 
 ## Lo que sigue
 
-1. **Subir `ArccNova.WebApi` a `v2.1.3`.** Monta Common en `Shared/Common` y no estaba en la maquina
-   donde se hizo este cierre, asi que no se sabe en que version esta. Los cambios que pueden romper al
-   subir estan en el `CHANGELOG` (seccion de migracion de 2.1.0 y 2.1.3).
-2. **Pruebas que faltan.** El SRS no tiene ningun requisito sin cumplir, pero varios solo se verifican
-   a traves de los consumidores: el orden de resolucion del tenant, la propagacion por `HttpClient`, el
-   registro por escaneo del mediator y la ejecucion real de las migraciones. La lista exacta esta en la
-   seccion 4 de [`docs/srs.md`](docs/srs.md).
-3. **Deuda anotada, sin urgencia** (ADR-0003 y SRS REQ-PERF-001): `Mediator.Send` resuelve el handler
-   por reflexion en cada llamada, sin cache.
-
-Nada quedo a medias y nada esta bloqueado.
+1. **Publicar 2.2.0** (tag `v2.2.0`, espejo `ApiCommon` con el paquete nuevo `Raptor.Common.Workflow`,
+   y la tabla de la regla `common-library` del catalogo). Antes:
+   - **Que un contador revise los vectores de depreciacion con tasas LISR** (C07, V1-V6): estan con los
+     numeros del SRS, no revisados.
+   - Revisar los **codigos de error que los agentes agregaron** ademas de los del SRS (son contrato):
+     `depreciation.invalid_method|invalid_cap|invalid_rounding`, `alerts.invalid_lead|invalid_stop`,
+     `states.invalid_code|invalid_reason_length|policy_unknown_transition`, `rules.missing_id`,
+     `forms.duplicate_id|unknown_section|invalid_value`.
+   - El espejo necesita empaquetar el proyecto nuevo (su CI publica por proyecto).
+2. **Subir `ArccNova.WebApi` a `v2.1.3`** (pendiente de antes, ver el `CHANGELOG`).
+3. **Pruebas que faltan** del resto de la libreria: la lista esta en la seccion 4 de [`docs/srs.md`](docs/srs.md).
+4. **Deuda anotada, sin urgencia:** `Mediator.Send` resuelve el handler por reflexion sin cache (ADR-0003).
 
 ## Lo que NO se verifico
 
-- Los ejemplos de datos y migraciones de `docs/guia/08` se **compilaron pero no se ejecutaron** contra
-  una base: en la maquina del cierre un hook impide al agente escribir SQL.
-- La guia `01` (submodulo) y la `02` (NuGet) se ejercitaron con dos APIs de prueba desechables que no
-  estan en ningun repo.
+- **Rendimiento de los motores (QOS):** hay pruebas con margen amplio (p. ej. reglas p95 < 10 ms con
+  meta de 1 ms), no benchmarks. C01 midio ~8-117 us por operacion.
+- **Cobertura:** no se midio (el proyecto de pruebas no tiene coverlet).
+- Los ejemplos de datos y migraciones de `docs/guia/08` se compilaron pero no se ejecutaron contra
+  una base.
 
 ## Lo que NO viaja con el `pull`
 

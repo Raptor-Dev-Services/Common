@@ -43,6 +43,7 @@ Raptor Dev Services
 | Rogelio Arriaga | 2026-09-24 | Primera version: requisitos extraidos del codigo de `aedf830` y de los ADR 0001-0008. | 1.0 |
 | Rogelio Arriaga | 2026-09-24 | REQ-SEC-004 y REQ-COMP-001 pasan a cumplirse (v2.1.1); REQ-SEC-001 cubre diccionarios. | 1.1 |
 | Rogelio Arriaga | 2026-09-24 | v2.1.2: REQ-FUNC-003, 008, 012 y 013 con prueba; nuevos REQ-SEC-005 a 007 y REQ-MAINT-003; REQ-FUNC-009, REQ-FUNC-011 y REQ-REL-002 marcados como no cumplidos tras comprobarlo. | 1.2 |
+| Rogelio Arriaga | 2026-10-11 | `Common.Workflow` (ADR-0009): alcance §1.2, RES-7 y REQ-WF-001 a 008. | 1.4 |
 | Rogelio Arriaga | 2026-09-24 | v2.1.3: los cuatro "no cumple" (REQ-FUNC-009, REQ-FUNC-011/REQ-SEC-006, REQ-SEC-007, REQ-REL-002) pasan a cumplirse, con prueba. | 1.3 |
 
 ## 1. Introduccion
@@ -387,6 +388,67 @@ No aplica.
   `HttpClient`, con sus valores por defecto o con los de una seccion de configuracion.
 - Verificacion: Inspeccion
 
+#### Workflow
+
+Los requisitos detallados de cada motor (con sus vectores de prueba) viven en los SRS de adopcion
+`SRS-CMN-C01` a `C07` del repo `Raptor-Dev-Services/glpi-ideas` (`02-comun/`). Aqui se fija lo que la
+libreria promete a sus consumidores.
+
+- ID: REQ-WF-001
+- Titulo: Definiciones validadas completas
+- Enunciado: Cada motor debe compilar su definicion una vez y, si es invalida, devolver un
+  `DefinitionFailure<T>` (`IValidationFailure`) con **todos** los errores, cada uno con un codigo estable
+  `componente.motivo` y la ruta del elemento.
+- Verificacion: Prueba
+
+- ID: REQ-WF-002
+- Titulo: Calendario habil (C01)
+- Enunciado: `BusinessCalendar` y `ServiceClock` deben calcular tiempo y dias habiles, fin de jornada,
+  feriados (incluidos los perpetuos que cruzan el anio), pausa y escalamiento en la zona de la
+  sucursal, con las reglas de cambio de horario de `BranchClock` (hueco adelanta; ambigua: primera
+  para lo que abre, ultima para lo que cierra).
+- Verificacion: Prueba
+
+- ID: REQ-WF-003
+- Titulo: Maquina de estados (C02)
+- Enunciado: `StateMachine<TState,TContext>` debe evaluar transiciones declarativas con matriz por rol
+  que **deniega por omision**, motivo obligatorio, guardas y ganchos con veto, sin registrar el motivo
+  en la telemetria.
+- Verificacion: Prueba
+
+- ID: REQ-WF-004
+- Titulo: Motor de reglas (C03)
+- Enunciado: `RuleCollection` debe evaluar criterios con AND/OR, multivaluados, capturas regex `#n`,
+  orden y stop, con regex de usuario acotadas (invariante, 100 ms, 500 caracteres).
+- Verificacion: Prueba
+
+- ID: REQ-WF-005
+- Titulo: Alertas de vencimiento (C04)
+- Enunciado: `AlertEvaluator` debe decidir si toca avisar (umbral, fin, preaviso, periodicidad) y
+  deduplicar por clave de ciclo a traves del puerto `IAlertLedger`, de modo que dos corridas
+  concurrentes avisen una sola vez.
+- Verificacion: Prueba
+
+- ID: REQ-WF-006
+- Titulo: Folios (C05)
+- Enunciado: Los folios deben formatearse y leerse como `T-000123` por ambito (global, tenant,
+  sucursal, periodo), con el contrato `IFolioGenerator`; la implementacion persistente es del consumidor.
+- Verificacion: Prueba
+
+- ID: REQ-WF-007
+- Titulo: Condiciones de formulario (C06)
+- Enunciado: `FormConditionEngine` debe calcular visibilidad por punto fijo (AND antes que OR),
+  validacion y destinos condicionales, rechazar ciclos de visibilidad al validar y, si no converge,
+  fallar cerrado (oculto).
+- Verificacion: Prueba
+
+- ID: REQ-WF-008
+- Titulo: Depreciacion (C07)
+- Enunciado: `DepreciationCalculator` debe calcular depreciacion lineal y decreciente, valor en libros a
+  fecha, garantia y TCO en `decimal` redondeado al centavo (`AwayFromZero`), sin ninguna tasa fiscal
+  fija en la libreria.
+- Verificacion: Prueba
+
 ### 3.3 Calidad de servicio
 
 #### 3.3.1 Rendimiento
@@ -669,6 +731,9 @@ ejecutaron contra una base.
 | REQ-FUNC-011, REQ-SEC-006 | Prueba | `TenancyAndMigrationFixesTests.cs` | Cumple desde v2.1.3 |
 | REQ-FUNC-007 (IP), REQ-SEC-007 | Prueba | `TenancyAndMigrationFixesTests.cs` | Cumple desde v2.1.3 |
 | REQ-REL-002 | Prueba | `TenancyAndMigrationFixesTests.cs` | Cumple desde v2.1.3 (el reintento en si, sin prueba) |
+| REQ-WF-001 | Prueba | `Common.Workflow.Tests/DefinitionFailureTests.cs` y las de cada motor | Cumple (sin publicar) |
+| REQ-WF-002 a 008 | Prueba | `Common.Workflow.Tests/{Calendars,States,Rules,Alerts,Folios,Forms,Depreciation}/` (716 pruebas) | Cumple (sin publicar) |
+| RES-7 | Prueba | `Common.Workflow.Tests/ArchitectureTests.cs` (lee el IL) | Cumple (sin publicar) |
 | REQ-FUNC-004 a 006, 007 (orden), 010, 015, 017 | Prueba | - | Sin prueba automatizada |
 | REQ-OBS-004 | Prueba | - | Sin prueba automatizada |
 | REQ-INT-*, REQ-FUNC-001, 002, 014, 016, 018 a 020 | Inspeccion | codigo fuente | Cumple por inspeccion |
