@@ -6,6 +6,19 @@ Cambios de cada version, con lo que hay que hacer para subir. Sigue
 La version es la del tag de git (`vX.Y.Z`) y la del paquete `Raptor.Common.*` en nuget.org: el
 mismo numero es el mismo codigo.
 
+## [Sin publicar]
+
+### Agregado
+- **`Common.Workflow`**, ensamblado nuevo de calculo puro
+  ([ADR-0009](docs/adr/0009-motores-de-calculo-en-common-workflow.md)). Solo depende de
+  `Common.Contracts`, no lee el reloj y **no entra a la facade**: se referencia explicito.
+  - `DefinitionError` / `DefinitionFailure<T>`: una definicion invalida devuelve todos sus errores
+    como `IValidationFailure`, con codigos estables.
+
+### Migracion
+- Nada que hacer si no lo usas. Para usarlo, agrega un `ProjectReference` a
+  `Common/Common.Workflow/Common.Workflow.csproj` (submodulo) o el paquete `Raptor.Common.Workflow`.
+
 ## [2.1.3] - 2026-09-24
 
 Corrige los cuatro problemas conocidos de la 2.1.2.

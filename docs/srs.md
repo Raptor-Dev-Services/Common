@@ -61,11 +61,14 @@ lo reescriba: resultados y errores estandar, un mediator con tuberia, multi-tene
 estructurado, observabilidad, resiliencia HTTP, health checks, fabricas de conexion y migraciones
 SQL al arranque.
 
-**Incluye:** los seis ensamblados de la solucion (`Common.Contracts`, `Common.Messaging`,
-`Common.MultiTenancy`, `Common.Infra`, `Common.Web` y la facade `Common`) y sus dos canales de
-distribucion.
+**Incluye:** los siete ensamblados de la solucion (`Common.Contracts`, `Common.Messaging`,
+`Common.MultiTenancy`, `Common.Infra`, `Common.Web`, `Common.Workflow` y la facade `Common`) y sus dos
+canales de distribucion. `Common.Workflow` trae **mecanismos genericos de calculo** (calendario habil,
+maquina de estados, motor de reglas, alertas de vencimiento, folios, condiciones de formulario y
+depreciacion), sin tablas ni reloj ([ADR-0009](adr/0009-motores-de-calculo-en-common-workflow.md)).
 
-**No incluye:** reglas de negocio de ningun producto, autenticacion y autorizacion (cada producto trae
+**No incluye:** reglas de negocio de ningun producto (el *contenido*: que estados tiene un ticket, que
+tasa tiene un activo; `Common.Workflow` solo trae el *mecanismo*), persistencia de esos motores, autenticacion y autorizacion (cada producto trae
 la suya), acceso a datos con ORM, ni infraestructura (Seq, Postgres, colector OTLP): eso lo pone el
 consumidor.
 
@@ -131,6 +134,8 @@ No hay SLA: es una libreria, no un servicio. El soporte es el del mantenedor.
 - **Datos:** fabricas de conexion (fija, por tenant, por tenant actual), envoltorio Dapper con
   medicion de tiempo, migraciones SQL al arranque para PostgreSQL.
 - **Operacion:** health checks, resiliencia HTTP, opciones validadas al arranque.
+- **Workflow:** calculo puro para los modulos de mesa de ayuda, SLA, activos y contratos de los
+  consumidores; opt-in, fuera de la facade.
 
 ### 2.3 Restricciones del producto
 
@@ -139,7 +144,9 @@ No hay SLA: es una libreria, no un servicio. El soporte es el del mantenedor.
 - **RES-3** `Common.Contracts` no debe depender de ningun paquete ni de otro `Common.*`.
 - **RES-4** Los namespaces publicos no deben cambiar al mover un tipo de ensamblado.
 - **RES-5** El unico motor de base de datos soportado por las piezas de datos concretas es PostgreSQL.
-- **RES-6** No debe contener logica de negocio ni nombres de un producto concreto.
+- **RES-6** No debe contener logica de negocio ni nombres de un producto concreto. Los motores de
+  `Common.Workflow` son mecanismo: reciben el contenido como definicion del consumidor.
+- **RES-7** `Common.Workflow` solo debe depender de `Common.Contracts` y no debe leer el reloj del sistema.
 
 ### 2.4 Caracteristicas de los usuarios
 
@@ -168,6 +175,7 @@ No hay SLA: es una libreria, no un servicio. El soporte es el del mantenedor.
 | `Common.MultiTenancy` | REQ-FUNC-007, REQ-FUNC-009, REQ-FUNC-011; REQ-SEC-006, 007 |
 | `Common.Infra` | REQ-FUNC-003 a 006, 010, 015 a 020; REQ-OBS-001 a 004; REQ-SEC-001, 004; REQ-REL-001 a 003 |
 | `Common.Web` | REQ-FUNC-008, 012 a 014; REQ-SEC-002, 003, 005 |
+| `Common.Workflow` | REQ-WF-001 a 008 |
 | Solucion completa | REQ-MAINT, REQ-BUILD, REQ-PORT, REQ-DIST, REQ-CM, REQ-COMP |
 
 ## 3. Requisitos
