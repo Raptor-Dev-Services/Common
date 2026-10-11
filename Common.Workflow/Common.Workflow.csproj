@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Calculo puro (ADR-0009): la unica dependencia permitida es Common.Contracts.
+       No entra a la facade Common.csproj; el consumidor lo referencia explicito. -->
+  <ItemGroup>
+    <ProjectReference Include="../Common.Contracts/Common.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

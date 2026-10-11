@@ -13,6 +13,7 @@ forzo, las opciones que se descartaron y lo que cuesta.
 | [0006](0006-enmascarar-datos-sensibles-por-lista-negra.md) | Enmascarar datos sensibles en el pipeline por lista negra de nombres | Aceptado |
 | [0007](0007-solo-dependencias-estables.md) | Solo dependencias en version estable, con puerta que truena | Aceptado |
 | [0008](0008-consumo-como-submodulo-fijado-a-commit.md) | Los consumidores reciben `Common` como submodulo fijado a commit | Aceptado |
+| [0009](0009-motores-de-calculo-en-common-workflow.md) | Motores de calculo genericos (calendario, estados, reglas...) en `Common.Workflow` | Propuesto |
 
 Las ocho se registraron **a posteriori** el 2026-09-24: la decision ya estaba tomada e implementada,
 y cada ADR cita el commit donde ocurrio. Los requisitos que estas decisiones sostienen estan en
