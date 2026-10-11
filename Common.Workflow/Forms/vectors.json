@@ -1,0 +1,1288 @@
+{
+  "spec": "SRS-CMN-C06 seccion 12 (vectores de paridad cliente/servidor, REQ-CMN-C06-QOS-002)",
+  "version": 1,
+  "notes": [
+    "Cada caso evalua forms[form] con answers y compara solo las claves presentes en expect.",
+    "answers: kind = None | Text | Number | Choice | Choices | Date (yyyy-MM-dd) | DateTime (yyyy-MM-ddTHH:mm:ss, hora de pared) | Time (HH:mm:ss) | Files (value = cuenta).",
+    "visibility.iterations cuenta las pasadas del punto fijo, incluida la que confirma que nada cambio.",
+    "validation: conditionIndex es la posicion de la condicion que falla en Validation.Conditions de la pregunta; null para required.",
+    "definitionErrors: resultado de ValidateDefinition; vacio o ausente si la definicion es valida.",
+    "El servidor (Common.Workflow.Forms) es la autoridad; el port TypeScript del front debe pasar estos mismos casos."
+  ],
+  "forms": {
+    "F1": {
+      "Id": "F1",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "s2",
+          "Rank": 2,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q1",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "acceso",
+                "Logic": "And"
+              }
+            ]
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "q1",
+          "SectionId": "s1",
+          "Type": "single_choice",
+          "IsMandatory": true,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "q2",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q1",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "equipo",
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "q3",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q2",
+                "SubjectKind": "Question",
+                "Operator": "NotEmpty",
+                "Value": null,
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "q4",
+          "SectionId": "s2",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": [
+        {
+          "Id": "d1",
+          "Creation": {
+            "Strategy": "CreatedUnless",
+            "Conditions": [
+              {
+                "SubjectId": "q1",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "acceso",
+                "Logic": "And"
+              }
+            ]
+          }
+        },
+        {
+          "Id": "d2",
+          "Creation": {
+            "Strategy": "CreatedIf",
+            "Conditions": [
+              {
+                "SubjectId": "q1",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "acceso",
+                "Logic": "And"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "F3a": {
+      "Id": "F3a",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "qa",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "qt",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "qa",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "si",
+                "Logic": "And"
+              },
+              {
+                "SubjectId": "qa",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "no",
+                "Logic": "And"
+              },
+              {
+                "SubjectId": "qa",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "si",
+                "Logic": "Or"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": []
+    },
+    "F3b": {
+      "Id": "F3b",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "qa",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "qt",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "qa",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "si",
+                "Logic": "And"
+              },
+              {
+                "SubjectId": "qa",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "no",
+                "Logic": "And"
+              },
+              {
+                "SubjectId": "qa",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "no",
+                "Logic": "Or"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": []
+    },
+    "F3c": {
+      "Id": "F3c",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "qa",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "qt",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "qa",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "no",
+                "Logic": "And"
+              },
+              {
+                "SubjectId": "qa",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "si",
+                "Logic": "Or"
+              },
+              {
+                "SubjectId": "qa",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "si",
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": []
+    },
+    "F4": {
+      "Id": "F4",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "visible_if",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "hidden_if",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "HiddenIf",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": [
+        {
+          "Id": "created_if",
+          "Creation": {
+            "Strategy": "CreatedIf",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "created_unless",
+          "Creation": {
+            "Strategy": "CreatedUnless",
+            "Conditions": []
+          }
+        }
+      ]
+    },
+    "F5": {
+      "Id": "F5",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "s2",
+          "Rank": 2,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q1",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "acceso",
+                "Logic": "And"
+              }
+            ]
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "q1",
+          "SectionId": "s1",
+          "Type": "single_choice",
+          "IsMandatory": true,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "q2",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q1",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "equipo",
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "q3",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q2",
+                "SubjectKind": "Question",
+                "Operator": "NotEmpty",
+                "Value": null,
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "q4",
+          "SectionId": "s2",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "q5",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q2",
+                "SubjectKind": "Question",
+                "Operator": "Empty",
+                "Value": null,
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": [
+        {
+          "Id": "d1",
+          "Creation": {
+            "Strategy": "CreatedUnless",
+            "Conditions": [
+              {
+                "SubjectId": "q1",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "acceso",
+                "Logic": "And"
+              }
+            ]
+          }
+        },
+        {
+          "Id": "d2",
+          "Creation": {
+            "Strategy": "CreatedIf",
+            "Conditions": [
+              {
+                "SubjectId": "q1",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "acceso",
+                "Logic": "And"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "F6": {
+      "Id": "F6",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "q6",
+          "SectionId": "s1",
+          "Type": "email",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "ValidIf",
+            "Conditions": [
+              {
+                "SubjectId": "q6",
+                "SubjectKind": "Question",
+                "Operator": "MatchRegex",
+                "Value": "^[^@]+@hospital\\.mx$",
+                "Logic": "And"
+              }
+            ]
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": []
+    },
+    "F8": {
+      "Id": "F8",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "q7",
+          "SectionId": "s1",
+          "Type": "number",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "q8",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q7",
+                "SubjectKind": "Question",
+                "Operator": "GreaterThan",
+                "Value": "-1",
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": []
+    },
+    "F9": {
+      "Id": "F9",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "q9",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q9",
+                "SubjectKind": "Question",
+                "Operator": "NotVisible",
+                "Value": null,
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": []
+    },
+    "F10": {
+      "Id": "F10",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "q3",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q5",
+                "SubjectKind": "Question",
+                "Operator": "Visible",
+                "Value": null,
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "q5",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q3",
+                "SubjectKind": "Question",
+                "Operator": "NotEmpty",
+                "Value": null,
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": []
+    },
+    "F11a": {
+      "Id": "F11a",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "q10",
+          "SectionId": "s1",
+          "Type": "multiple_choice",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "qt",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q10",
+                "SubjectKind": "Question",
+                "Operator": "Contains",
+                "Value": "a,c",
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": []
+    },
+    "F11b": {
+      "Id": "F11b",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "q10",
+          "SectionId": "s1",
+          "Type": "multiple_choice",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "qt",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q10",
+                "SubjectKind": "Question",
+                "Operator": "Equals",
+                "Value": "a,b",
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": []
+    },
+    "F11c": {
+      "Id": "F11c",
+      "SubmitVisibility": {
+        "Strategy": "AlwaysVisible",
+        "Conditions": []
+      },
+      "Sections": [
+        {
+          "Id": "s1",
+          "Rank": 1,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          }
+        }
+      ],
+      "Questions": [
+        {
+          "Id": "q10",
+          "SectionId": "s1",
+          "Type": "multiple_choice",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "AlwaysVisible",
+            "Conditions": []
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        },
+        {
+          "Id": "qt",
+          "SectionId": "s1",
+          "Type": "text",
+          "IsMandatory": false,
+          "Visibility": {
+            "Strategy": "VisibleIf",
+            "Conditions": [
+              {
+                "SubjectId": "q10",
+                "SubjectKind": "Question",
+                "Operator": "NotMatchRegex",
+                "Value": "^z",
+                "Logic": "And"
+              }
+            ]
+          },
+          "Validation": {
+            "Strategy": "NoValidation",
+            "Conditions": []
+          }
+        }
+      ],
+      "Comments": [],
+      "Destinations": []
+    }
+  },
+  "cases": [
+    {
+      "id": "V1",
+      "form": "F1",
+      "answers": {
+        "q1": {
+          "kind": "Choice",
+          "value": "equipo"
+        },
+        "q2": {
+          "kind": "Text",
+          "value": "Caminadora 3"
+        }
+      },
+      "expect": {
+        "visibility": {
+          "questions": {
+            "q2": true,
+            "q3": true,
+            "q4": false
+          },
+          "sections": {
+            "s1": true,
+            "s2": false
+          },
+          "iterations": 2,
+          "converged": true
+        }
+      }
+    },
+    {
+      "id": "V2",
+      "form": "F1",
+      "answers": {
+        "q1": {
+          "kind": "Choice",
+          "value": "acceso"
+        },
+        "q2": {
+          "kind": "Text",
+          "value": "Caminadora 3"
+        }
+      },
+      "expect": {
+        "visibility": {
+          "questions": {
+            "q2": false,
+            "q3": false,
+            "q4": true
+          },
+          "sections": {
+            "s2": true
+          },
+          "iterations": 3,
+          "converged": true
+        }
+      }
+    },
+    {
+      "id": "V3a",
+      "form": "F3a",
+      "answers": {
+        "qa": {
+          "kind": "Text",
+          "value": "si"
+        }
+      },
+      "expect": {
+        "visibility": {
+          "questions": {
+            "qt": true
+          }
+        }
+      }
+    },
+    {
+      "id": "V3b",
+      "form": "F3b",
+      "answers": {
+        "qa": {
+          "kind": "Text",
+          "value": "si"
+        }
+      },
+      "expect": {
+        "visibility": {
+          "questions": {
+            "qt": false
+          }
+        }
+      }
+    },
+    {
+      "id": "V3c",
+      "form": "F3c",
+      "answers": {
+        "qa": {
+          "kind": "Text",
+          "value": "si"
+        }
+      },
+      "expect": {
+        "visibility": {
+          "questions": {
+            "qt": true
+          }
+        }
+      }
+    },
+    {
+      "id": "V4",
+      "form": "F4",
+      "answers": {},
+      "expect": {
+        "visibility": {
+          "questions": {
+            "visible_if": false,
+            "hidden_if": true
+          }
+        },
+        "destinations": [
+          "created_unless"
+        ]
+      }
+    },
+    {
+      "id": "V5",
+      "form": "F5",
+      "answers": {
+        "q1": {
+          "kind": "Choice",
+          "value": "acceso"
+        },
+        "q2": {
+          "kind": "Text",
+          "value": "x"
+        }
+      },
+      "expect": {
+        "visibility": {
+          "questions": {
+            "q2": false,
+            "q5": true
+          }
+        }
+      }
+    },
+    {
+      "id": "V6a",
+      "form": "F6",
+      "answers": {
+        "q6": {
+          "kind": "Text",
+          "value": "x@gmail.com"
+        }
+      },
+      "expect": {
+        "validation": [
+          {
+            "questionId": "q6",
+            "code": "validation",
+            "conditionIndex": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "V6b",
+      "form": "F6",
+      "answers": {
+        "q6": {
+          "kind": "Text",
+          "value": "ana@hospital.mx"
+        }
+      },
+      "expect": {
+        "validation": []
+      }
+    },
+    {
+      "id": "V7a",
+      "form": "F1",
+      "answers": {
+        "q1": {
+          "kind": "Choice",
+          "value": "equipo"
+        }
+      },
+      "expect": {
+        "destinations": [
+          "d1"
+        ]
+      }
+    },
+    {
+      "id": "V7b",
+      "form": "F1",
+      "answers": {
+        "q1": {
+          "kind": "Choice",
+          "value": "acceso"
+        }
+      },
+      "expect": {
+        "destinations": [
+          "d2"
+        ]
+      }
+    },
+    {
+      "id": "V8",
+      "form": "F8",
+      "answers": {
+        "q7": {
+          "kind": "None"
+        }
+      },
+      "expect": {
+        "visibility": {
+          "questions": {
+            "q8": false
+          }
+        }
+      }
+    },
+    {
+      "id": "V9",
+      "form": "F9",
+      "answers": {},
+      "expect": {
+        "visibility": {
+          "questions": {
+            "q9": false
+          },
+          "iterations": 100,
+          "converged": false
+        }
+      }
+    },
+    {
+      "id": "V10",
+      "form": "F10",
+      "answers": {},
+      "expect": {
+        "definitionErrors": [
+          {
+            "code": "forms.visibility_cycle",
+            "messageContains": "q3 → q5 → q3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "V11a",
+      "form": "F11a",
+      "answers": {
+        "q10": {
+          "kind": "Choices",
+          "value": [
+            "a",
+            "b",
+            "c"
+          ]
+        }
+      },
+      "expect": {
+        "visibility": {
+          "questions": {
+            "qt": true
+          }
+        }
+      }
+    },
+    {
+      "id": "V11b",
+      "form": "F11b",
+      "answers": {
+        "q10": {
+          "kind": "Choices",
+          "value": [
+            "a",
+            "b",
+            "c"
+          ]
+        }
+      },
+      "expect": {
+        "visibility": {
+          "questions": {
+            "qt": false
+          }
+        }
+      }
+    },
+    {
+      "id": "V11c",
+      "form": "F11c",
+      "answers": {
+        "q10": {
+          "kind": "Choices",
+          "value": [
+            "a",
+            "b",
+            "c"
+          ]
+        }
+      },
+      "expect": {
+        "visibility": {
+          "questions": {
+            "qt": true
+          }
+        }
+      }
+    }
+  ]
+}
