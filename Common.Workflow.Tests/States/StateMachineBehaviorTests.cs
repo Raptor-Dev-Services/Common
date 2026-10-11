@@ -266,14 +266,17 @@ public class StateMachineBehaviorTests
     [Fact]
     public async Task ExecuteAsync_abre_una_actividad_sin_el_motivo()
     {
-        var activities = new List<Activity>();
+        // El listener es global: otras pruebas en paralelo tambien producen actividades de la misma
+        // maquina. Se aislan las de esta prueba colgandolas de una traza padre propia.
+        var activities = new System.Collections.Concurrent.ConcurrentQueue<Activity>();
         using var listener = new ActivityListener
         {
             ShouldListenTo = s => s.Name == StateMachineTelemetry.ActivitySourceName,
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = activities.Add,
+            ActivityStopped = activities.Enqueue,
         };
         ActivitySource.AddActivityListener(listener);
+        using var parent = new Activity("prueba").SetIdFormat(ActivityIdFormat.W3C).Start();
         var machine = Compile(hooks: [new RecordingHook("v", [], only: "plan", veto: GuardResult.Fail("x", "y"))]);
 
         await machine.ExecuteAsync(Request(Ticket.Solved, Ticket.Assigned, Requester, "motivo secreto"), Policy(), Nada, Ct);
@@ -286,7 +289,7 @@ public class StateMachineBehaviorTests
         await Assert.ThrowsAsync<TimeoutException>(() => machine.ExecuteAsync(
             Request(Ticket.New, Ticket.Assigned, Supervisor), Policy(), (_, _) => throw new TimeoutException(), Ct));
 
-        var mine = activities.Where(a => (string?)a.GetTagItem("machine") == "ticket").ToList();
+        var mine = activities.Where(a => a.TraceId == parent.TraceId).ToList();
         Assert.All(mine, a => Assert.Equal(StateMachineTelemetry.TransitionActivityName, a.OperationName));
         Assert.Equal(
             ["allowed", "no_change", "denied", "vetoed", "reason_required", "not_declared", "guard_failed", "error"],
