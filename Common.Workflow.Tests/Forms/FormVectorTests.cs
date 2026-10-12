@@ -122,13 +122,20 @@ public class FormVectorTests
     [Fact]
     public void V9_sin_convergencia_falla_cerrado()
     {
-        var form = Form(Question("q9", "text", VisibleIf(Q("q9", ValueOperator.NotVisible))));
+        // q9 sola oscila con periodo 2: tras 100 pasadas (par) ya queda oculta por la oscilacion y la prueba no
+        // detectaria quitar el "falla cerrado". q9b va ANTES y las pasadas actualizan en sitio, asi que sigue a q9
+        // con una pasada de retraso: al final de la pasada 100 la oscilacion deja q9b visible, y solo el "falla
+        // cerrado" la oculta.
+        var form = Form(
+            Question("q9b", "text", VisibleIf(Q("q9", ValueOperator.Visible))),
+            Question("q9", "text", VisibleIf(Q("q9", ValueOperator.NotVisible))));
 
         var result = Engine.ComputeVisibility(form, FormAnswers.Empty);
 
         Assert.False(result.Converged);
         Assert.Equal(100, result.Iterations);
         Assert.False(result.Questions["q9"]);
+        Assert.False(result.Questions["q9b"]);
     }
 
     [Fact]
