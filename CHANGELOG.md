@@ -8,6 +8,8 @@ mismo numero es el mismo codigo.
 
 ## [Sin publicar]
 
+## [2.2.0] - 2026-10-27
+
 ### Agregado
 - **Excepciones comunes y errores con envelope** (se publica como v2.2.0, minor: solo agrega).
   - `Common.Contracts`: `ResourceNotFoundException` (404), `DataIntegrityException` (422) y
