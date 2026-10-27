@@ -31,7 +31,7 @@ namespace Common.Web
     public sealed class EnvelopeExceptionMiddleware
     {
         /// <summary>Mensaje que recibe el cliente ante una excepcion inesperada (500).</summary>
-        public const string GenericErrorMessage = "Ocurrio un error inesperado.";
+        public const string GenericErrorMessage = "Ocurrió un error inesperado.";
 
         /// <summary>Status no estandar que usa nginx para "el cliente cerro la conexion".</summary>
         public const int ClientClosedRequestStatusCode = 499;

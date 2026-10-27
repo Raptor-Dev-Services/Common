@@ -83,7 +83,7 @@ un middleware que las traduce. Todas viven en el namespace `Common.Exceptions` y
 | `BusinessRuleViolationException` | 409 | Choca con el estado actual (ya existe, ya procesado) |
 | `DataIntegrityException` | 422 | Datos guardados que el sistema no puede procesar |
 | `OperationCanceledException` con `RequestAborted` cancelado | 499, sin cuerpo | El cliente cerro la conexion: no es error (log `Information`) |
-| Cualquier otra | 500 | Mensaje generico `"Ocurrio un error inesperado."`; la excepcion completa solo va al log (`Error`) |
+| Cualquier otra | 500 | Mensaje generico `"Ocurrió un error inesperado."`; la excepcion completa solo va al log (`Error`) |
 
 ```csharp
 // Program.cs
@@ -118,7 +118,7 @@ internal sealed class EnvelopeExceptionHandler(ILogger<EnvelopeExceptionHandler>
     {
         var (status, message) = exception is BusinessRuleException
             ? (StatusCodes.Status400BadRequest, exception.Message)
-            : (StatusCodes.Status500InternalServerError, "Ocurrio un error inesperado.");
+            : (StatusCodes.Status500InternalServerError, "Ocurrió un error inesperado.");
 
         if (status == StatusCodes.Status500InternalServerError)
             logger.LogError(exception, "Excepcion no controlada");
