@@ -9,6 +9,14 @@ mismo numero es el mismo codigo.
 ## [Sin publicar]
 
 ### Agregado
+- **Excepciones comunes y errores con envelope** (se publica como v2.2.0, minor: solo agrega).
+  - `Common.Contracts`: `ResourceNotFoundException` (404), `DataIntegrityException` (422) y
+    `BusinessRuleViolationException` (409), todas subclases de `BusinessRuleException` (400).
+  - `Common.Web`: `UseEnvelopeExceptionHandling()` / `EnvelopeExceptionMiddleware` responde esas
+    excepciones con el envelope `ResultViewModel` (camelCase), cualquier otra como 500 con mensaje
+    generico (el detalle solo al log), la peticion cancelada por el cliente como 499 sin log de error,
+    y no escribe si la respuesta ya empezo. Los logs llevan `TraceId` y `CorrelationId`.
+    Ver [guia 05](docs/guia/05-errores.md).
 - **`Common.Workflow`**, ensamblado nuevo de calculo puro
   ([ADR-0009](docs/adr/0009-motores-de-calculo-en-common-workflow.md)). Solo depende de
   `Common.Contracts`, no lee el reloj y **no entra a la facade**: se referencia explicito.
@@ -27,6 +35,8 @@ mismo numero es el mismo codigo.
     el consumidor**; los vectores de prueba con tasas LISR aun no los revisa un contador.
 
 ### Migracion
+- Excepciones y `UseEnvelopeExceptionHandling`: nada que hacer si no los usas; `UseCoreProblemDetails` sigue igual
+  (las subclases nuevas salen ahi como 400).
 - Nada que hacer si no lo usas. Para usarlo, agrega un `ProjectReference` a
   `Common/Common.Workflow/Common.Workflow.csproj` (submodulo) o el paquete `Raptor.Common.Workflow`.
 

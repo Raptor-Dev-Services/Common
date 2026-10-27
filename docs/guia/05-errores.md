@@ -66,16 +66,50 @@ Envuelve todo lo que viene despues y convierte las excepciones que se escapen en
 - Registralo **primero** en el pipeline. Lo que se registre antes que el no queda protegido.
 - Limites conocidos: si la respuesta ya empezo a escribirse (un streaming que falla a la mitad), no
   puede cambiar el status y la excepcion se propaga. Y una peticion que el cliente cancela
-  (`OperationCanceledException`) se registra como `Error` y responde 500; si te molesta ese ruido,
-  atrapala antes con tu propio middleware.
+  (`OperationCanceledException`) se registra como `Error` y responde 500. `UseEnvelopeExceptionHandling`
+  resuelve ambos casos.
+
+## Excepciones comunes y `UseEnvelopeExceptionHandling` (envelope unico)
+
+Para que **todos** los errores salgan en el envelope `{ data, isSuccess, message, utcTimeStamp }`
+(camelCase), sin ProblemDetails, `Common.Contracts` trae una jerarquia de excepciones y `Common.Web`
+un middleware que las traduce. Todas viven en el namespace `Common.Exceptions` y derivan de
+`BusinessRuleException`, asi que su mensaje es para el usuario:
+
+| Excepcion | Status | Cuando |
+|---|---|---|
+| `BusinessRuleException` | 400 | Peticion o regla invalida |
+| `ResourceNotFoundException` | 404 | El recurso no existe |
+| `BusinessRuleViolationException` | 409 | Choca con el estado actual (ya existe, ya procesado) |
+| `DataIntegrityException` | 422 | Datos guardados que el sistema no puede procesar |
+| `OperationCanceledException` con `RequestAborted` cancelado | 499, sin cuerpo | El cliente cerro la conexion: no es error (log `Information`) |
+| Cualquier otra | 500 | Mensaje generico `"Ocurrio un error inesperado."`; la excepcion completa solo va al log (`Error`) |
+
+```csharp
+// Program.cs
+app.UseCorrelationId();               // opcional: pone el CorrelationId en los logs del middleware
+app.UseEnvelopeExceptionHandling();   // lo primero tras el correlation id; en vez de UseCoreProblemDetails
+```
+
+No requiere registrar servicios. Usa uno u otro (`UseCoreProblemDetails` o este), no los dos. No cambia
+nada para quien ya usa `UseCoreProblemDetails`: ahi las subclases nuevas salen como 400.
+
+```csharp
+throw new ResourceNotFoundException("No existe el folio 7.");   // 404
+// {"data":null,"isSuccess":false,"message":"No existe el folio 7.","utcTimeStamp":"2026-10-27T16:00:00Z"}
+```
+
+- Si la respuesta ya empezo a escribirse, el middleware no puede cambiar el status: solo registra.
+- Cada log lleva `TraceId` (el de la actividad o `HttpContext.TraceIdentifier`) y `CorrelationId`.
+- Una `OperationCanceledException` que **no** viene del cliente (p. ej. un timeout interno) si es 500.
 
 ## Dos formatos de error en la misma API
 
-Los fallos esperados salen en el envelope (`ResultViewModel`: `isSuccess`, `message`) y las
-excepciones en ProblemDetails. Son dos formatos, y el cliente tiene que entender los dos.
+Los fallos esperados salen en el envelope (`ResultViewModel`: `isSuccess`, `message`) y, con
+`UseCoreProblemDetails`, las excepciones en ProblemDetails. Son dos formatos, y el cliente tiene que
+entender los dos. Si prefieres uno solo, usa `UseEnvelopeExceptionHandling` (arriba).
 
-Si prefieres uno solo, no uses `UseCoreProblemDetails` y escribe tu propio manejador que responda
-con el envelope. En ASP.NET Core la forma idiomatica es un `IExceptionHandler`:
+Si necesitas algo a medida, en ASP.NET Core la forma idiomatica es un `IExceptionHandler`:
 
 ```csharp
 internal sealed class EnvelopeExceptionHandler(ILogger<EnvelopeExceptionHandler> logger) : IExceptionHandler

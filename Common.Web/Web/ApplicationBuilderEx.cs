@@ -60,6 +60,26 @@ namespace Common.Web
         {
             return app.UseMiddleware<ProblemDetailsMiddleware>();
         }
+
+        /// <summary>
+        /// Agrega <see cref="EnvelopeExceptionMiddleware"/>: convierte las excepciones en respuestas con el
+        /// envelope <c>{ data, isSuccess, message, utcTimeStamp }</c> (no <c>problem+json</c>).
+        /// <see cref="Common.Exceptions.ResourceNotFoundException"/> da 404,
+        /// <see cref="Common.Exceptions.BusinessRuleViolationException"/> 409,
+        /// <see cref="Common.Exceptions.DataIntegrityException"/> 422,
+        /// <see cref="BusinessRuleException"/> 400 y cualquier otra 500 con mensaje generico. Una peticion
+        /// cancelada por el cliente no es error (499, Information).
+        /// </summary>
+        /// <remarks>
+        /// Alternativa a <see cref="UseCoreProblemDetails"/>: usa una u otra, no las dos. Va despues de
+        /// <see cref="UseCorrelationId"/> (para que los logs lleven el id) y antes de lo que quieras proteger.
+        /// </remarks>
+        /// <param name="app">Constructor de la aplicacion.</param>
+        /// <returns>El mismo constructor, para encadenar.</returns>
+        public static IApplicationBuilder UseEnvelopeExceptionHandling(this IApplicationBuilder app)
+        {
+            return app.UseMiddleware<EnvelopeExceptionMiddleware>();
+        }
     }
 
     /// <summary>

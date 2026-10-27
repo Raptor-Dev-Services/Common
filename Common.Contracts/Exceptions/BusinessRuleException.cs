@@ -8,6 +8,9 @@ namespace Common.Exceptions
     /// El middleware de <c>UseCoreProblemDetails</c> la convierte en una respuesta 400 con
     /// este mensaje como detalle; cualquier otra excepcion sale como 500 con un mensaje
     /// generico. Por eso el mensaje no debe llevar datos internos.
+    /// <c>UseEnvelopeExceptionHandling</c> la responde con 400 en el envelope. Sus subclases
+    /// <see cref="ResourceNotFoundException"/> (404), <see cref="BusinessRuleViolationException"/> (409)
+    /// y <see cref="DataIntegrityException"/> (422) tienen cada una su status.
     /// </remarks>
     public class BusinessRuleException : Exception
     {
