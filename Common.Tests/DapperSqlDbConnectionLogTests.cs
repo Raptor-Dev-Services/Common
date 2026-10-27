@@ -53,6 +53,23 @@ public sealed class DapperSqlDbConnectionLogTests
         Assert.Equal("ana@ejemplo.test", parametros["Email"]);
     }
 
+    [Fact]
+    public async Task El_hash_de_PIN_y_el_codigo_TOTP_de_un_parametro_SQL_no_llegan_al_log()
+    {
+        var logger = new LoggerQueCaptura();
+        var db = new DapperSqlDbConnectionBase(new FabricaQueFalla(), logger);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => db.ExecuteAsync(
+            "UPDATE operadores SET pin_hash = @PinHash WHERE codigo = @Code AND otp = @TotpCode",
+            new { PinHash = "AQAAAAEhash", TotpCode = "481516", Code = "OP-7" }));
+
+        var parametros = Assert.IsType<Dictionary<string, object?>>(logger.Parametros());
+        Assert.Equal(SensitiveDataMasker.Tapado, parametros["PinHash"]);
+        Assert.Equal(SensitiveDataMasker.Tapado, parametros["TotpCode"]);
+        // Un Code de negocio en un parametro SQL se conserva.
+        Assert.Equal("OP-7", parametros["Code"]);
+    }
+
     private sealed class FabricaQueFalla : IOpenDbConnectionFactory
     {
         public Task<IDbConnection> GetOpenConnectionAsync(CancellationToken cancellationToken = default)
