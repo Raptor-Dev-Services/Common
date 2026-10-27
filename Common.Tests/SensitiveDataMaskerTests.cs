@@ -258,4 +258,83 @@ public sealed class SensitiveDataMaskerTests
         Assert.Equal(SensitiveDataMasker.Tapado, d["ApiKey"]);
         Assert.Equal("visible", d["Nombre"]);
     }
+
+    private sealed record OperadorRequest(string OperatorId, string Pin, string NewPin, string OperatorPin, string PinHash);
+    private sealed record ConfirmTotpRequest(string Email, string Code);
+    private sealed record VerifySecondFactorRequest(string Code);
+    private sealed record EnableTwoFactorRequest(string Codigo);
+    private sealed record AltaDeProductoRequest(string Code, string ProductCode, string LineCode, string ShippingAddress);
+    private sealed record ConCodigosDeVerificacion(string TotpCode, string OtpCode, string VerificationCode, string TwoFactorCode, string SecondFactorCode);
+
+    [Fact]
+    public void El_PIN_y_sus_variantes_no_llegan_al_log()
+    {
+        var d = Assert.IsType<Dictionary<string, object?>>(
+            SensitiveDataMasker.Enmascarar(new OperadorRequest("op-7", "8264", "1111", "2222", "AQAAAAEhash")));
+
+        foreach (var campo in new[] { "Pin", "NewPin", "OperatorPin", "PinHash" })
+            Assert.Equal(SensitiveDataMasker.Tapado, d[campo]);
+        Assert.Equal("op-7", d["OperatorId"]);
+    }
+
+    [Theory]
+    [InlineData("PIN")]
+    [InlineData("pin")]
+    [InlineData("operator_pin")]
+    [InlineData("pin_hash")]
+    [InlineData("OperatorPIN")]
+    [InlineData("PINHash")]
+    public void El_PIN_se_reconoce_en_cualquier_estilo_de_nombre(string nombre)
+        => Assert.True(SensitiveDataMasker.EsSensible(nombre));
+
+    [Theory]
+    [InlineData("ShippingAddress")]
+    [InlineData("MappingId")]
+    [InlineData("Spinner")]
+    [InlineData("TypingSpeed")]
+    [InlineData("Opinion")]
+    [InlineData("PinLength")]
+    public void Un_nombre_que_solo_contiene_pin_como_fragmento_NO_se_tapa(string nombre)
+        => Assert.False(SensitiveDataMasker.EsSensible(nombre));
+
+    [Fact]
+    public void El_codigo_TOTP_se_tapa_cuando_el_request_es_de_segundo_factor()
+    {
+        var a = Assert.IsType<Dictionary<string, object?>>(
+            SensitiveDataMasker.Enmascarar(new ConfirmTotpRequest("ana@ejemplo.test", "481516")));
+        var b = Assert.IsType<Dictionary<string, object?>>(
+            SensitiveDataMasker.Enmascarar(new VerifySecondFactorRequest("481516")));
+        var c = Assert.IsType<Dictionary<string, object?>>(
+            SensitiveDataMasker.Enmascarar(new EnableTwoFactorRequest("481516")));
+
+        Assert.Equal(SensitiveDataMasker.Tapado, a["Code"]);
+        Assert.Equal("ana@ejemplo.test", a["Email"]);
+        Assert.Equal(SensitiveDataMasker.Tapado, b["Code"]);
+        Assert.Equal(SensitiveDataMasker.Tapado, c["Codigo"]);
+    }
+
+    [Fact]
+    public void Un_Code_de_negocio_NO_se_tapa()
+    {
+        var d = Assert.IsType<Dictionary<string, object?>>(
+            SensitiveDataMasker.Enmascarar(new AltaDeProductoRequest("P-100", "SKU-9", "L-3", "Calle 1")));
+
+        Assert.Equal("P-100", d["Code"]);
+        Assert.Equal("SKU-9", d["ProductCode"]);
+        Assert.Equal("L-3", d["LineCode"]);
+        Assert.Equal("Calle 1", d["ShippingAddress"]);
+        // Sin tipo (diccionario, parametros SQL) un Code a secas tampoco se tapa.
+        Assert.False(SensitiveDataMasker.EsSensible("Code"));
+        Assert.False(SensitiveDataMasker.EsSensible("ProductCode"));
+    }
+
+    [Fact]
+    public void Los_codigos_de_verificacion_con_nombre_propio_se_tapan_en_cualquier_tipo()
+    {
+        var d = Assert.IsType<Dictionary<string, object?>>(
+            SensitiveDataMasker.Enmascarar(new ConCodigosDeVerificacion("1", "2", "3", "4", "5")));
+
+        foreach (var campo in new[] { "TotpCode", "OtpCode", "VerificationCode", "TwoFactorCode", "SecondFactorCode" })
+            Assert.Equal(SensitiveDataMasker.Tapado, d[campo]);
+    }
 }

@@ -17,6 +17,21 @@ mismo numero es el mismo codigo.
   Todas se relanzan igual. `ProblemDetailsMiddleware` (`UseCoreProblemDetails`) tambien registra la
   cancelacion del cliente como `Information` y ya no responde 500. Ver [guia 05](docs/guia/05-errores.md).
 
+- **Enmascarado de logs: PIN y codigo de segundo factor** (parche de seguridad; se publica como v2.2.1).
+  `SensitiveDataMasker` (log del pipeline y parametros SQL de Dapper) ahora tapa:
+  - **PIN**: toda palabra `pin` en el nombre (`Pin`, `PinHash`, `OperatorPin`, `NewPin`, `PIN`,
+    `operator_pin`), por palabra completa y no por fragmento, para no tapar `ShippingAddress`,
+    `MappingId` ni `Spinner`.
+  - **Codigo de segundo factor**: `verificationcode`, `twofactorcode`, `secondfactorcode`, `mfacode`,
+    `authenticatorcode`, `recoverycode` (ademas de `otp`/`totp`, que ya caian), y la propiedad `Code`/`Codigo`
+    **solo** si el nombre del tipo contiene `SecondFactor`, `Totp`, `TwoFactor` o `Mfa`
+    (`ConfirmTotpRequest.Code`). `Code` a secas, `ProductCode` o `LineCode` siguen visibles.
+  - Los parametros SQL no tienen tipo: ahi `Code` sigue visible; un parametro de segundo factor debe
+    llamarse `TotpCode`/`OtpCode`/etc.
+  - Nuevo `SensitiveDataMasker.EsSensible(nombre, nombreDeTipo)` y listas publicas de solo lectura
+    `PalabrasCompletas` y `TiposDeSegundoFactor`.
+  - Un producto que tenia un filtro propio para esto puede borrarlo y depender de Common.
+
 ## [2.2.0] - 2026-10-27
 
 ### Agregado
