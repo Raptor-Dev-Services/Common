@@ -8,6 +8,8 @@ mismo numero es el mismo codigo.
 
 ## [Sin publicar]
 
+## [2.2.1] - 2026-10-27
+
 ### Corregido
 - **Niveles de log del pipeline del mediador** (saldra como v2.2.1). `InteractorPipeline` registraba
   como `Critical` toda excepcion de un handler y como `Error` toda `BusinessRuleException`: en Seq
