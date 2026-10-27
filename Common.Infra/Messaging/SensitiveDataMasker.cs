@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Common.Messaging
 {
@@ -51,7 +52,39 @@ namespace Common.Messaging
             "privatekey", "private_key",
             "connectionstring",
             "otp", "totp",
+            // Codigo de segundo factor con nombre propio (el nombre ya dice que es un codigo
+            // de verificacion; no hace falta mirar el tipo): TotpCode, OtpCode ya caen por
+            // "totp"/"otp".
+            "verificationcode", "twofactorcode", "secondfactorcode", "mfacode",
+            "authenticatorcode", "recoverycode",
         };
+
+        /// <summary>
+        /// Palabras COMPLETAS que marcan un valor como sensible: el nombre se parte en palabras
+        /// (camelCase, PascalCase, guion bajo, siglas) y debe haber una igual a alguna de estas.
+        /// Se usa para <c>pin</c> porque como fragmento tapa de mas: "Shipping", "Mapping",
+        /// "Spinner" o "Typing" lo contienen. Asi <c>Pin</c>, <c>PinHash</c>, <c>OperatorPin</c>,
+        /// <c>NewPin</c>, <c>PIN</c> y <c>operator_pin</c> caen, y <c>ShippingAddress</c> no.
+        /// </summary>
+        public static readonly IReadOnlyList<string> PalabrasCompletas = new[] { "pin", "pinhash" };
+
+        /// <summary>
+        /// Fragmentos del NOMBRE DEL TIPO que vuelven sensible una propiedad llamada <c>Code</c>
+        /// (o <c>Codigo</c>) de ese tipo. <c>Code</c> a secas es un nombre comun (codigo de
+        /// producto, de linea, de error) y taparlo siempre ocultaria datos de depuracion; solo
+        /// es el codigo de segundo factor cuando el request lo es: <c>ConfirmTotpRequest</c>,
+        /// <c>VerifySecondFactorRequest</c>, <c>EnableTwoFactorRequest</c>, <c>MfaChallenge</c>.
+        /// Aplica solo a objetos con tipo: un diccionario o los parametros SQL no lo tienen, ahi
+        /// <c>Code</c> sigue visible (un parametro de segundo factor debe llamarse
+        /// <c>TotpCode</c>, <c>OtpCode</c>, etc.).
+        /// </summary>
+        public static readonly IReadOnlyList<string> TiposDeSegundoFactor = new[]
+        {
+            "secondfactor", "totp", "twofactor", "mfa",
+        };
+
+        private static readonly Regex PartesDeNombre = new(
+            "[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[0-9]+", RegexOptions.Compiled);
 
         // Un tope de profundidad, no por rendimiento sino porque un grafo con ciclos
         // (una entidad con su padre, que a su vez la contiene) haria desbordar la pila
@@ -85,7 +118,24 @@ namespace Common.Messaging
         {
             if (SufijosDescriptivos.Any(s => nombre.EndsWith(s, StringComparison.OrdinalIgnoreCase)))
                 return false;
-            return Terminos.Any(t => nombre.Contains(t, StringComparison.OrdinalIgnoreCase));
+            if (Terminos.Any(t => nombre.Contains(t, StringComparison.OrdinalIgnoreCase)))
+                return true;
+            return PartesDeNombre.Matches(nombre)
+                .Any(m => PalabrasCompletas.Contains(m.Value, StringComparer.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Como <see cref="EsSensible(string)"/>, pero sabiendo el tipo que contiene la
+        /// propiedad: ademas tapa <c>Code</c>/<c>Codigo</c> cuando el nombre del tipo es de
+        /// segundo factor (<see cref="TiposDeSegundoFactor"/>).
+        /// </summary>
+        public static bool EsSensible(string nombre, string? nombreDeTipo)
+        {
+            if (EsSensible(nombre)) return true;
+            return nombreDeTipo is not null
+                && (nombre.Equals("Code", StringComparison.OrdinalIgnoreCase)
+                    || nombre.Equals("Codigo", StringComparison.OrdinalIgnoreCase))
+                && TiposDeSegundoFactor.Any(t => nombreDeTipo.Contains(t, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -150,7 +200,7 @@ namespace Common.Messaging
             {
                 if (p.GetIndexParameters().Length > 0) continue;
 
-                if (EsSensible(p.Name))
+                if (EsSensible(p.Name, tipo.Name))
                 {
                     // Se tapa SIN leer el valor: leerlo y descartarlo deja el secreto en
                     // memoria y en cualquier volcado, y ademas un getter con efectos
