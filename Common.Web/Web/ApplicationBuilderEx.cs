@@ -352,6 +352,12 @@ namespace Common.Web
                 await WriteProblemDetails(context, StatusCodes.Status400BadRequest, "Business rule violation", ex.Message)
                     .ConfigureAwait(false);
             }
+            catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+            {
+                // El cliente cerro la conexion: no es un fallo. Se registra como Information y no se
+                // escribe respuesta (nadie la lee). Las demas excepciones siguen como Error.
+                _logger.LogInformation("Peticion cancelada por el cliente.");
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unhandled exception");

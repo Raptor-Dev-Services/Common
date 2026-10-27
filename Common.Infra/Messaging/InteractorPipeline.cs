@@ -19,9 +19,23 @@ namespace Common.Messaging
     /// exito o fallo. La publicacion no recibe el token de cancelacion.
     /// </para>
     /// <para>
-    /// Si el handler o un presenter lanzan, registra la excepcion (Error si es
-    /// <see cref="BusinessRuleException"/>, Critical en otro caso, con el mensaje de la excepcion mas
-    /// interna) y la relanza.
+    /// Si el handler o un presenter lanzan, registra la excepcion segun su naturaleza y la relanza
+    /// siempre, sin cambiar el flujo:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description><see cref="OperationCanceledException"/> con el token de la peticion cancelado
+    /// (el navegador cerro la conexion): <c>Information</c>. No es un fallo.</description></item>
+    /// <item><description><see cref="BusinessRuleException"/> y sus subclases
+    /// (<see cref="ResourceNotFoundException"/>, <see cref="DataIntegrityException"/>,
+    /// <see cref="BusinessRuleViolationException"/>): <c>Warning</c>. Son resultados de negocio esperados.</description></item>
+    /// <item><description>Cualquier otra: <c>Error</c>, con el mensaje de la excepcion mas interna.
+    /// Nunca <c>Critical</c>: ese nivel significa "el proceso no puede continuar", y un handler que
+    /// falla solo pierde esa peticion; usarlo disparaba alertas falsas.</description></item>
+    /// </list>
+    /// <para>
+    /// El token de la peticion es el <see cref="CancellationToken"/> que recibe el behavior (el mismo que
+    /// recibe el handler). Una <see cref="OperationCanceledException"/> con ese token sin cancelar (un
+    /// timeout interno, por ejemplo) si es un fallo y se registra como <c>Error</c>.
     /// </para>
     /// <para>
     /// Solo se aplica a peticiones cuya respuesta es <see cref="IResponse"/>. <c>AddMediator</c> lo registra
@@ -71,16 +85,21 @@ namespace Common.Messaging
                 }
                 await Mediator.Publish(response).ConfigureAwait(false);
             }
+            catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
+            {
+                Logger.LogInformation(ex, "Peticion cancelada: {RequestType}", _requestType.Name);
+                throw;
+            }
             catch (BusinessRuleException ex)
             {
-                Logger.LogError(ex, "Error: {ErrorMessage}", ex.Message);
+                Logger.LogWarning(ex, "Regla de negocio: {ErrorMessage}", ex.Message);
                 throw;
             }
             catch (Exception ex)
             {
                 var innerEx = ex;
                 while (innerEx.InnerException != null) innerEx = innerEx.InnerException!;
-                Logger.LogCritical(ex, "Error critico: {ErrorMessage}", innerEx.Message);
+                Logger.LogError(ex, "Error no controlado: {ErrorMessage}", innerEx.Message);
                 throw;
             }
             return response;

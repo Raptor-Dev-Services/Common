@@ -9,6 +9,14 @@ mismo numero es el mismo codigo.
 ## [Sin publicar]
 
 ### Corregido
+- **Niveles de log del pipeline del mediador** (saldra como v2.2.1). `InteractorPipeline` registraba
+  como `Critical` toda excepcion de un handler y como `Error` toda `BusinessRuleException`: en Seq
+  aparecian FATAL por cada peticion que el navegador cancelaba y ERROR por cada 404 normal. Ahora:
+  `OperationCanceledException` con el token de la peticion cancelado -> `Information`;
+  `BusinessRuleException` y subclases -> `Warning`; cualquier otra -> `Error` (nunca `Critical`).
+  Todas se relanzan igual. `ProblemDetailsMiddleware` (`UseCoreProblemDetails`) tambien registra la
+  cancelacion del cliente como `Information` y ya no responde 500. Ver [guia 05](docs/guia/05-errores.md).
+
 - **Enmascarado de logs: PIN y codigo de segundo factor** (parche de seguridad; se publica como v2.2.1).
   `SensitiveDataMasker` (log del pipeline y parametros SQL de Dapper) ahora tapa:
   - **PIN**: toda palabra `pin` en el nombre (`Pin`, `PinHash`, `OperatorPin`, `NewPin`, `PIN`,

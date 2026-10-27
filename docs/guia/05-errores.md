@@ -66,8 +66,27 @@ Envuelve todo lo que viene despues y convierte las excepciones que se escapen en
 - Registralo **primero** en el pipeline. Lo que se registre antes que el no queda protegido.
 - Limites conocidos: si la respuesta ya empezo a escribirse (un streaming que falla a la mitad), no
   puede cambiar el status y la excepcion se propaga. Y una peticion que el cliente cancela
-  (`OperationCanceledException`) se registra como `Error` y responde 500. `UseEnvelopeExceptionHandling`
-  resuelve ambos casos.
+  (`OperationCanceledException`) se registra como `Information` y no escribe respuesta (desde
+  v2.2.1; antes era `Error` + 500). `UseEnvelopeExceptionHandling` ademas responde 499.
+
+## Niveles de log de las excepciones
+
+El behavior del mediador (`InteractorPipeline`) registra la excepcion que sale de un handler y la
+relanza siempre. El nivel depende de la naturaleza, para que las alertas de Seq signifiquen algo:
+
+| Excepcion | Nivel | Por que |
+|---|---|---|
+| `OperationCanceledException` con el token de la peticion cancelado | `Information` | El cliente cerro la conexion (navegacion rapida): no es un fallo |
+| `BusinessRuleException` y subclases (404, 409, 422) | `Warning` | Resultado de negocio esperado |
+| Cualquier otra | `Error` | Fallo inesperado de esa peticion |
+
+**Decision: nada sale como `Critical`.** `Critical` significa "el proceso no puede continuar" (BD
+inaccesible al arrancar, configuracion invalida). Una excepcion en un handler solo pierde esa peticion,
+asi que es `Error`. Quien necesite `Critical` lo registra explicitamente donde el proceso si no puede seguir.
+
+El token que se compara es el `CancellationToken` que recibe el behavior, el mismo que recibe el
+handler (en ASP.NET viene de `HttpContext.RequestAborted`). Una `OperationCanceledException` con ese token
+sin cancelar (un timeout interno) es un fallo y sale como `Error`.
 
 ## Excepciones comunes y `UseEnvelopeExceptionHandling` (envelope unico)
 
